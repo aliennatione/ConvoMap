@@ -34,7 +34,8 @@ const conversationalPatterns = [
 function cleanContent(content, fileName) {
     let cleanedContent = content;
     for (const pattern of conversationalPatterns) {
-        if (typeof pattern === 'object' && pattern.test.test(fileName)) {
+        // Check for our special object format first (it has a replacer function)
+        if (typeof pattern === 'object' && pattern.replacer && pattern.test && pattern.test.test(fileName)) {
             cleanedContent = pattern.replacer(cleanedContent);
         } else if (pattern instanceof RegExp) {
             cleanedContent = cleanedContent.replace(pattern, '');
