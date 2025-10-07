@@ -1,71 +1,94 @@
 import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
- * Analyzes and restructures a raw text conversation into a hierarchical markdown mind map
- * using the Gemini API.
- * @param {string} content The raw text content of the conversation.
+ * Determines the content type of a text based on keywords.
+ * @param {string} content The text to analyze.
+ * @returns {'technical' | 'literary'} The classified content type.
+ */
+function classifyContent(content) {
+    const technicalKeywords = ['git', 'npm', 'error', 'code', 'commit', 'deploy', 'workflow', 'debug', 'script'];
+    const contentLower = content.toLowerCase();
+    const technicalCount = technicalKeywords.reduce((count, keyword) => count + (contentLower.includes(keyword) ? 1 : 0), 0);
+
+    // If we find more than 2 technical keywords, it's likely a technical log.
+    if (technicalCount > 2) {
+        return 'technical';
+    }
+    return 'literary';
+}
+
+/**
+ * Generates a prompt for analyzing technical development logs.
+ * @param {string} content The technical log content.
+ * @returns {string} The specialized prompt for Gemini.
+ */
+function getTechnicalPrompt(content) {
+    return `
+      As an expert software project analyst, your task is to convert a technical conversation log into a structured, hierarchical markdown mind map for Markmap.
+
+      **Instructions:**
+      1.  **Title:** Create a root title for the project or the main goal discussed.
+      2.  **Key Topics:** Identify major themes like "Project Setup", "Bug Fixes", "New Features", "Deployment", "Errors". These are your main branches.
+      3.  **Hierarchy:** Structure events, commands, and decisions chronologically or logically under the appropriate topic. Use indentation for sub-tasks or details.
+      4.  **Code & Commands:** Represent important terminal commands or code snippets as distinct nodes.
+      5.  **Decisions & Outcomes:** Clearly mark key decisions and their results (e.g., "Decision: Use ES Modules", "Outcome: Resolved import errors").
+
+      **Analyze the following technical log:**
+      ---
+      ${content}
+      ---
+    `;
+}
+
+/**
+ * Generates a prompt for analyzing literary or narrative texts.
+ * @param {string} content The story content.
+ * @returns {string} The specialized prompt for Gemini.
+ */
+function getLiteraryPrompt(content) {
+    return `
+      As an expert literary analyst, your task is to convert a chapter of a story into a structured, hierarchical markdown mind map for Markmap.
+
+      **Instructions:**
+      1.  **Identify Core Subject:** Use the story's central theme or main character as the root node.
+      2.  **Extract Plot Points:** Pull out main events, character interactions, and turning points as primary branches.
+      3.  **Analyze Characters:** Create branches for main characters, describing their key actions, motivations, or dialogue.
+      4.  **Note Settings:** Create nodes for the different locations where the story takes place.
+      5.  **Format for Markmap:** Use standard markdown with # for the title and - for indented bullets.
+
+      **Analyze the following story excerpt:**
+      ---
+      ${content}
+      ---
+    `;
+}
+
+/**
+ * Analyzes content using a dynamically selected prompt and generates a mind map with Gemini.
+ * @param {string} content The raw text content.
  * @param {string} apiKey The Gemini API key.
- * @returns {Promise<string>} The structured markdown ready for Markmap.
+ * @returns {Promise<string>} The structured markdown for Markmap.
  */
 export async function synthesizeContent(content, apiKey) {
-  if (!apiKey) {
-    throw new Error('Gemini API key is missing. Please set the GEMINI_API_KEY environment variable.');
-  }
+    if (!apiKey) {
+        throw new Error('Gemini API key is missing.');
+    }
 
-  const genAI = new GoogleGenerativeAI(apiKey);
-  const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    const contentType = classifyContent(content);
+    console.log(`  - Content classified as: ${contentType}`);
 
-  const prompt = `
-    As an expert software project analyst, your task is to convert a raw conversation log into a structured, hierarchical markdown mind map. Your output will be directly used by Markmap.
+    const prompt = contentType === 'technical' ? getTechnicalPrompt(content) : getLiteraryPrompt(content);
 
-    **Instructions:**
+    const genAI = new GoogleGenerativeAI(apiKey);
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
-    1.  **Analyze the Core Subject:** Identify the main goal or subject of the conversation. This will be your root node.
-    2.  **Identify Key Themes:** Extract the main topics, questions, and decisions. These will be the primary branches of your mind map.
-    3.  **Structure Hierarchically:** Organize the information logically. Use sub-bullets (indentation) to represent details, code snippets, file paths, and subsequent developments related to a key theme.
-    4.  **Extract Actionable Items:** Highlight important code snippets (using markdown for code blocks), commands, and file names.
-    5.  **Create Repository Links:** If a file path (e.g., \`build.mjs\`, \`.github/workflows/deploy.yml\`) is mentioned, format it as a markdown link pointing to its location in the \`aliennatione/ConvoMap\` repository on the \`main\` branch. The format should be \`[filename](https://github.com/aliennatione/ConvoMap/blob/main/filename)\`.
-    6.  **Summarize and Conclude:** Create a final "Conclusion" or "Outcome" branch that summarizes the final state or resolution of the conversation.
-    7.  **Format for Markmap:** Use standard markdown syntax (# for the title, - for bullets, indentation for hierarchy, and \`\`\` for code blocks).
-
-    **Example Input (Raw Log):**
-    "User: I'm getting a 403 error when deploying to gh-pages.
-    AI: Ah, that's a permissions issue. The GITHUB_TOKEN needs write access. You need to add 'permissions: contents: write' to your deploy.yml workflow file.
-    User: done.
-    AI: Great, pushing the fix now."
-
-    **Example Output (Structured Markdown):**
-    # GitHub Pages Deployment Issue
-
-    - **Problem Identified**: Deployment fails with a 403 Forbidden error.
-      - **Root Cause**: The default \`GITHUB_TOKEN\` lacks write permissions to the repository.
-    - **Solution Proposed**: Grant write permissions to the deployment job.
-      - **Specific Change**: Add \`permissions: contents: write\` to the workflow file.
-      - **File Affected**: [\`.github/workflows/deploy.yml\`](https://github.com/aliennatione/ConvoMap/blob/main/.github/workflows/deploy.yml)
-    - **Implementation**: The fix was applied and pushed to the \`main\` branch.
-    - **Outcome**: The deployment workflow is now expected to succeed.
-
-    **Now, analyze and structure the following conversation log:**
-
-    ---
-    ${content}
-    ---
-  `;
-
-  try {
-    const result = await model.generateContent(prompt);
-    const response = await result.response;
-    const text = await response.text();
-    return text;
-  } catch (error) {
-    console.error("Error during Gemini API call:", error);
-    // Fallback to a simple version of the content to avoid total failure
-    return `# Analysis Error
-
-- Could not process content with Gemini.
-- Raw content:
-\\\`\\\`\\\`
-${content.substring(0, 500)}...
-\\\`\\\`\\\``;
-  }
+    try {
+        const result = await model.generateContent(prompt);
+        const response = await result.response;
+        const text = await response.text();
+        return text;
+    } catch (error) {
+        console.error(`Error during Gemini API call for ${contentType} content:`, error);
+        return `# Analysis Error\n\n- Could not process content with Gemini.`;
+    }
 }

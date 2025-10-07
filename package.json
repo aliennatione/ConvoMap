@@ -1,18 +1,27 @@
 {
   "name": "convomap",
   "version": "1.0.0",
-  "description": "",
-  "main": "index.js",
+  "description": "A project to generate mind maps from conversations.",
+  "main": "build.js",
   "type": "module",
   "scripts": {
-    "test": "echo \"Error: no test specified\" && exit 1",
-    "build": "node build.js"
+    "build": "node build.js",
+    "start": "serve public",
+    "dev": "chokidar '**/*.md' -c 'npm run build'"
   },
-  "keywords": [],
+  "keywords": [
+    "mind-map",
+    "conversation",
+    "markdown"
+  ],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google/generative-ai": "^0.16.0",
-    "markmap-cli": "^0.17.0"
+    "@google/generative-ai": "^0.16.1",
+    "chokidar": "^3.6.0",
+    "commander": "^11.1.0",
+    "hono": "^3.12.12",
+    "markmap-cli": "^0.17.2",
+    "serve": "^14.2.3"
   }
 }

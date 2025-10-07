@@ -80,6 +80,7 @@ async function main() {
         console.log(`🧠 Synthesizing content for ${markdownFiles.length} file(s) using Gemini...`);
 
         const conversionPromises = markdownFiles.map(async (fileName) => {
+            console.log(`Processing file: ${fileName}`);
             const rawContent = await readFile(join(INPUT_DIR, fileName), 'utf-8');
             
             // Synthesize content with Gemini
