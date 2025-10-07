@@ -79,21 +79,23 @@ export async function synthesizeContent(content, apiKey) {
     const prompt = contentType === 'technical' ? getTechnicalPrompt(content) : getLiteraryPrompt(content);
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
+    // Use a more recent and stable model identifier.
+    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
 
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
-        // Before getting the text, check if the response was blocked.
-        if (!response.candidates || response.candidates.length === 0) {
-            console.error(`❌ Gemini API call for [${contentType}] returned no candidates. Finish Reason: ${response.promptFeedback?.blockReason}`);
-            console.error('Prompt Feedback:', response.promptFeedback)
-            return `# Analysis Blocked\n\n- The content was blocked by Gemini's safety filters.\n- Reason: ${response.promptFeedback?.blockReason}`;
+        
+        if (response.promptFeedback?.blockReason) {
+            console.error(`❌ Gemini API call for [${contentType}] was blocked. Reason: ${response.promptFeedback.blockReason}`);
+            return `# Analysis Blocked\n\n- The content was blocked by Gemini's safety filters.\n- Reason: ${response.promptFeedback.blockReason}`;
         }
+
         const text = await response.text();
         return text;
     } catch (error) {
         console.error(`❌ Detailed Gemini API Error for content type [${contentType}]:`, JSON.stringify(error, null, 2));
-        return `# Analysis Error\n\n- An unexpected error occurred with the Gemini API. See build logs for details.`;
+        // Throw the error to stop the build process for this file
+        throw new Error(`Gemini API failed for ${contentType} content. Check logs for details.`);
     }
 }
