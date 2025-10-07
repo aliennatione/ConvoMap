@@ -1,2 +1,11 @@
-node_modules/
-public/
+# Dependencies
+/node_modules
+
+# Intermediate processed data
+/processed_data
+
+# Caddy server temp file
+.caddy-config.json
+
+# macOS
+.DS_Store

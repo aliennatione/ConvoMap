@@ -1,73 +1,79 @@
-# ConvoMap: Convertitore di Chat in Mappe Mentali
+# ConvoMap: From Chat Logs to Interactive Mind Maps
 
-Questo progetto fornisce una catena di strumenti (toolchain) per convertire i log delle conversazioni, esportati in formato Markdown, in mappe mentali interattive in HTML. È stato progettato per estrarre informazioni strutturate da dati conversazionali, ripulirle e visualizzarle in modo gerarchico utilizzando [Markmap](https://markmap.js.org/).
+[![Deploy to GitHub Pages](https://github.com/aliennatione/ConvoMap/actions/workflows/deploy.yml/badge.svg)](https://github.com/aliennatione/ConvoMap/actions/workflows/deploy.yml)
 
-## Obiettivo del Progetto
+**ConvoMap** is a powerful, automated toolchain that transforms messy chat logs into clean, structured, and interactive mind maps. It was designed to make sense of long conversations, especially with AI assistants, by turning them into a navigable visual format.
 
-L'obiettivo principale è trasformare lunghe e spesso complesse cronologie di chat in mappe mentali chiare e navigabili. Questo approccio facilita l'analisi, la documentazione e la revisione dei punti chiave, delle decisioni prese e degli snippet di codice discussi durante una conversazione, specialmente quelle avute con assistenti AI.
+> **Live Demo:** Check out the published mind maps at [**https://aliennatione.github.io/ConvoMap/**](https://aliennatione.github.io/ConvoMap/)
 
-## Come Funziona
+## Why ConvoMap?
 
-Il processo è automatizzato tramite script e si articola in due fasi principali, orchestrate dal comando `npm run build`:
+Conversations, especially technical ones with AI, are full of valuable information: code snippets, decisions, and key insights. However, raw chat logs are noisy and hard to review. ConvoMap solves this by:
 
-1.  **Preprocessing Avanzato (`preprocess.mjs`):**
-    *   Lettura dei file Markdown "grezzi" dalla directory `data/`.
-    *   Pulizia intelligente per rimuovere il "rumore" conversazionale.
-    *   Correzione strutturale per garantire la compatibilità con Markmap.
-    *   Salvataggio dei file puliti nella directory `processed_data/`.
+- **Filtering the Noise:** Automatically removes conversational fluff like greetings, affirmations, and other non-essential text.
+- **Structuring the Content:** Intelligently corrects formatting to create a clear, hierarchical structure.
+- **Visualizing the Result:** Uses [Markmap](https://markmap.js.org/) to generate beautiful, interactive HTML mind maps that you can easily explore.
 
-2.  **Build delle Mappe (`build.mjs`):**
-    *   Esecuzione del preprocessing.
-    *   Conversione di ogni file Markdown pulito in una mappa mentale HTML.
-    *   Salvataggio dei file HTML nella directory `public/`.
-    *   Creazione di un file `index.html` per la navigazione.
+## How It Works: The Pipeline
 
-## Istruzioni per l'Ambiente IDX
+The project is orchestrated by `npm run build`, which executes a simple but powerful pipeline:
 
-Questo progetto è pre-configurato per l'ambiente di sviluppo IDX. Il file `.idx/dev.nix` installa automaticamente Node.js e Caddy per l'anteprima locale.
+1.  **Preprocessing (`preprocess.mjs`):**
+    - Reads all Markdown files from the `data/` directory.
+    - Applies a series of customizable rules to clean up the content.
+    - Passes the clean Markdown content in memory to the next stage.
 
-### Guida Rapida (IDX)
+2.  **Mind Map Generation (`build.mjs`):**
+    - Takes the cleaned content.
+    - Uses `markmap-cli` to convert it into a standalone HTML file.
+    - Saves the resulting mind map in the `public/` directory.
 
-1.  **Installazione Dipendenze:** `npm install`
-2.  **Avvio Build:** `npm run build`
-3.  **Visualizzazione:** Apri l'anteprima di IDX per vedere il sito servito da Caddy.
+3.  **Index Creation (`build.mjs`):**
+    - After all maps are built, it generates a main `index.html` file in `public/`.
+    - This index acts as a portal, providing links to all the generated mind maps.
 
-## Pubblicazione con GitHub Pages
+## Local Development (IDX Environment)
 
-Questo repository include un workflow di **GitHub Actions** che automatizza completamente la pubblicazione del sito su GitHub Pages.
+This repository is pre-configured for a seamless experience in **IDX**, Google's development environment.
 
-### Come Funziona l'Automazione
-
-1.  Ogni volta che effettui un `push` sul branch `main`, l'azione si attiva automaticamente.
-2.  Esegue il build del progetto (`npm run build`) su un server virtuale.
-3.  Prende il contenuto della cartella `public/` e lo pubblica su un branch dedicato chiamato `gh-pages`.
-
-### Istruzioni per la Configurazione
-
-La prima volta, devi dire a GitHub di usare il risultato di questa automazione per il tuo sito. È un'operazione da fare una sola volta:
-
-1.  Vai sul tuo repository GitHub: `https://github.com/aliennatione/ConvoMap`.
-2.  Clicca su **Settings** (Impostazioni).
-3.  Nel menu a sinistra, clicca su **Pages**.
-4.  Sotto **Build and deployment**, alla voce **Source**, seleziona **GitHub Actions**.
-
-### Accesso al Sito
-
-Dopo il primo push, attendi un paio di minuti che l'azione completi il suo primo ciclo. Il tuo sito sarà quindi visibile all'indirizzo:
-
-**https://aliennatione.github.io/ConvoMap/**
-
-Ad ogni push successivo sul branch `main`, il sito si aggiornerà automaticamente.
-
-## Personalizzazione
-
-Per utilizzare questo strumento con le tue conversazioni:
-
-1.  **Aggiungi i File:** Inserisci i tuoi file `.md` nella directory `data/`.
-2.  **Esegui il Commit e il Push:** Salva le modifiche e inviale a GitHub.
+1.  **Dependencies:** The first time you open the project, `npm install` will run automatically.
+2.  **Build:** To manually trigger a build, run the following command in the terminal:
     ```bash
-    git add data/tuo-nuovo-file.md
-    git commit -m "Aggiunto nuovo file di conversazione"
+    npm run build
+    ```
+3.  **Preview:** IDX provides a live web server (Caddy) configured via `.idx/dev.nix`. After a build, the preview panel will show the `index.html` in the `public/` folder, allowing you to navigate your mind maps locally.
+
+## Automated Publishing with GitHub Pages
+
+This repository uses **GitHub Actions** to automatically build and deploy your mind maps to a public website.
+
+### How the Automation Works
+
+- **Trigger:** The workflow runs every time you `push` changes to the `main` branch.
+- **Build:** It sets up a Node.js environment, installs dependencies (using a cache for speed), and runs `npm run build`.
+- **Deploy:** It takes the contents of the `public/` directory and deploys them to the `gh-pages` branch, which is then served as your website.
+
+### One-Time Setup
+
+To enable GitHub Pages, you need to configure your repository once:
+
+1.  Go to your repository's **Settings** > **Pages**.
+2.  Under **Build and deployment**, set the **Source** to **GitHub Actions**.
+
+That's it! Your site will be live shortly after your first push.
+
+### How to Add New Mind Maps
+
+Your workflow is now fully automated. To add a new mind map:
+
+1.  Place your raw chat log file (e.g., `my-chat.md`) inside the `data/` directory.
+2.  Commit and push your changes:
+    ```bash
+    git add data/my-chat.md
+    git commit -m "Add new chat log for visualization"
     git push origin main
     ```
-3.  **Attendi e Visualizza:** Dopo qualche minuto, l'azione si completerà e la nuova mappa mentale apparirà sul tuo sito GitHub Pages.
+3.  Wait a few moments for the GitHub Action to complete. Your new mind map will appear on the index page of your live site.
+
+---
+*This project was bootstrapped and refined with the help of an AI assistant, demonstrating a practical use case for ConvoMap itself.*
