@@ -79,8 +79,8 @@ export async function synthesizeContent(content, apiKey) {
     const prompt = contentType === 'technical' ? getTechnicalPrompt(content) : getLiteraryPrompt(content);
 
     const genAI = new GoogleGenerativeAI(apiKey);
-    // Use a more recent and stable model identifier.
-    const model = genAI.getGenerativeModel({ model: "gemini-1.5-flash-latest" });
+    // Reverting to the standard 'gemini-pro' model, as newer versions might not be available for this API key.
+    const model = genAI.getGenerativeModel({ model: "gemini-pro" });
 
     try {
         const result = await model.generateContent(prompt);
