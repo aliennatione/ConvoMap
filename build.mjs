@@ -1,5 +1,5 @@
 import { exec } from 'child_process';
-import { writeFile, mkdir, readdir } from 'fs/promises';
+import { writeFile, mkdir, readdir, rm } from 'fs/promises';
 import { join } from 'path';
 import { promisify } from 'util';
 import { preprocess } from './preprocess.mjs';
@@ -8,6 +8,7 @@ const execAsync = promisify(exec);
 
 const INPUT_DIR = 'data';
 const OUTPUT_DIR = 'public';
+const TEMP_DIR = 'tmp_build'; // Directory for temporary preprocessed files
 
 /**
  * Generates an index.html file that lists all created mind maps.
@@ -58,41 +59,40 @@ async function main() {
     try {
         console.log('🚀 Starting build process...');
 
-        // Ensure output directory exists
+        // Ensure output and temporary directories exist
         await mkdir(OUTPUT_DIR, { recursive: true });
+        await mkdir(TEMP_DIR, { recursive: true });
 
-        // 1. Preprocess all files in the input directory
+        // 1. Preprocess all files
         console.log('🔍 Preprocessing files...');
         const processedData = await preprocess(INPUT_DIR);
         
         if (processedData.length === 0) {
-            console.warn('⚠️ No markdown files found in the data directory. Build process finished early.');
-            await createIndex([]); // Create an empty index
+            console.warn('⚠️ No markdown files found. Build finished early.');
+            await createIndex([]);
             return;
         }
 
-        // 2. Convert each processed markdown content to a mind map
+        // 2. Generate mind maps using temporary files
         console.log('🧠 Generating mind maps...');
         const conversionPromises = processedData.map(async ({ fileName, content }) => {
             const baseName = fileName.replace(/\.md$/, '');
+            const tempInputPath = join(TEMP_DIR, fileName);
             const outputPath = join(OUTPUT_DIR, `${baseName}.html`);
-            
-            // Pass '-' to markmap-cli to indicate reading from stdin.
-            const command = `npx markmap-cli - --no-open --output "${outputPath}"`;
-            const child = execAsync(command);
-            
-            if (child.child.stdin) {
-                child.child.stdin.write(content);
-                child.child.stdin.end();
-            }
 
-            await child;
+            // Write preprocessed content to a temporary file
+            await writeFile(tempInputPath, content);
+
+            // Execute markmap-cli on the temporary file
+            const command = `npx markmap-cli "${tempInputPath}" --no-open --output "${outputPath}"`;
+            await execAsync(command);
+            
             console.log(`🗺️  Mind map created: ${outputPath}`);
         });
 
         await Promise.all(conversionPromises);
 
-        // 3. Create an index file for easy navigation
+        // 3. Create the main index file
         const builtFiles = (await readdir(OUTPUT_DIR)).filter(file => file.endsWith('.html') && file !== 'index.html');
         await createIndex(builtFiles);
 
@@ -101,6 +101,10 @@ async function main() {
     } catch (error) {
         console.error('❌ Build process failed:', error);
         process.exit(1);
+    } finally {
+        // 4. Clean up the temporary directory
+        console.log('🧹 Cleaning up temporary files...');
+        await rm(TEMP_DIR, { recursive: true, force: true });
     }
 }
 
