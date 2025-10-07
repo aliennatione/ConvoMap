@@ -1,0 +1,16 @@
+
+{
+  "name": "markmap-project",
+  "version": "1.0.0",
+  "description": "",
+  "main": "build.mjs",
+  "scripts": {
+    "build": "node build.mjs"
+  },
+  "keywords": [],
+  "author": "",
+  "license": "ISC",
+  "devDependencies": {
+    "markmap-cli": "^0.17.0"
+  }
+}

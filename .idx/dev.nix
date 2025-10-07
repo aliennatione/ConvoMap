@@ -23,8 +23,8 @@
     workspace = {
       # Runs when a workspace is first created
       onCreate = {
-        install-markmap = "npm install -g markmap-cli";
-        default.openFiles = [ ".idx/dev.nix" "README.md" ];
+        npm-install = "npm install";
+        default.openFiles = [ ".idx/dev.nix" "README.md" "package.json"];
       };
       # Runs when the workspace is (re)started
       onStart = {};

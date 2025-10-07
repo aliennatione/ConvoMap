@@ -1,4 +1,3 @@
-
 import { readdir, writeFile } from 'fs/promises';
 import { exec } from 'child_process';
 import { promisify } from 'util';
@@ -16,7 +15,8 @@ async function build() {
   for (const file of markdownFiles) {
     const inputFile = `${dataDir}/${file}`;
     const outputFile = `${publicDir}/${file.replace('.md', '.html')}`;
-    const { stdout, stderr } = await execAsync(`markmap ${inputFile} -o ${outputFile} --no-open`);
+    // Use npx to run the locally installed markmap-cli
+    const { stdout, stderr } = await execAsync(`npx markmap ${inputFile} -o ${outputFile} --no-open`);
     if (stderr) {
       console.error(`Error converting ${file}:`, stderr);
     } else {
