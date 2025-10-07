@@ -6,6 +6,7 @@
   # Use https://search.nixos.org/packages to find packages
   packages = [
     pkgs.nodejs_20
+    pkgs.caddy # Add caddy for serving static files
   ];
   # Sets environment variables in the workspace
   env = {};
@@ -17,7 +18,13 @@
     # Enable previews
     previews = {
       enable = true;
-      previews = {};
+      previews = {
+        # Configure a web preview for the generated mind maps
+        web = {
+          command = ["caddy" "file-server" "--listen" ":$PORT" "--browse" "--root" "public"];
+          manager = "web";
+        };
+      };
     };
     # Workspace lifecycle hooks
     workspace = {
