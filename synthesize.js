@@ -10,7 +10,6 @@ function classifyContent(content) {
     const contentLower = content.toLowerCase();
     const technicalCount = technicalKeywords.reduce((count, keyword) => count + (contentLower.includes(keyword) ? 1 : 0), 0);
 
-    // If we find more than 2 technical keywords, it's likely a technical log.
     if (technicalCount > 2) {
         return 'technical';
     }
@@ -85,10 +84,16 @@ export async function synthesizeContent(content, apiKey) {
     try {
         const result = await model.generateContent(prompt);
         const response = await result.response;
+        // Before getting the text, check if the response was blocked.
+        if (!response.candidates || response.candidates.length === 0) {
+            console.error(`❌ Gemini API call for [${contentType}] returned no candidates. Finish Reason: ${response.promptFeedback?.blockReason}`);
+            console.error('Prompt Feedback:', response.promptFeedback)
+            return `# Analysis Blocked\n\n- The content was blocked by Gemini's safety filters.\n- Reason: ${response.promptFeedback?.blockReason}`;
+        }
         const text = await response.text();
         return text;
     } catch (error) {
-        console.error(`Error during Gemini API call for ${contentType} content:`, error);
-        return `# Analysis Error\n\n- Could not process content with Gemini.`;
+        console.error(`❌ Detailed Gemini API Error for content type [${contentType}]:`, JSON.stringify(error, null, 2));
+        return `# Analysis Error\n\n- An unexpected error occurred with the Gemini API. See build logs for details.`;
     }
 }
