@@ -1,4 +1,4 @@
-import { GoogleGenerativeAI } from \'@google/generative-ai\';
+import { GoogleGenerativeAI } from '@google/generative-ai';
 
 /**
  * Analyzes and restructures a raw text conversation into a hierarchical markdown mind map
@@ -9,7 +9,7 @@ import { GoogleGenerativeAI } from \'@google/generative-ai\';
  */
 export async function synthesizeContent(content, apiKey) {
   if (!apiKey) {
-    throw new Error(\'Gemini API key is missing. Please set the GEMINI_API_KEY environment variable.\');
+    throw new Error('Gemini API key is missing. Please set the GEMINI_API_KEY environment variable.');
   }
 
   const genAI = new GoogleGenerativeAI(apiKey);
@@ -60,6 +60,12 @@ export async function synthesizeContent(content, apiKey) {
   } catch (error) {
     console.error("Error during Gemini API call:", error);
     // Fallback to a simple version of the content to avoid total failure
-    return `# Analysis Error\\n\\n- Could not process content with Gemini.\\n- Raw content:\\n\\\`\\\`\\\`\\n${content.substring(0, 500)}...\\n\\\`\\\`\\\``;
+    return `# Analysis Error
+
+- Could not process content with Gemini.
+- Raw content:
+\\\`\\\`\\\`
+${content.substring(0, 500)}...
+\\\`\\\`\\\``;
   }
 }
