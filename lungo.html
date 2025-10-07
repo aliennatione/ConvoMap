@@ -1,0 +1,52 @@
+<!doctype html>
+<html>
+<head>
+<meta charset="UTF-8" />
+<meta name="viewport" content="width=device-width, initial-scale=1.0" />
+<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<title>Markmap</title>
+<style>
+* {
+  margin: 0;
+  padding: 0;
+}
+html {
+  font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
+    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
+}
+#mindmap {
+  display: block;
+  width: 100vw;
+  height: 100vh;
+}
+.markmap-dark {
+  background: #27272a;
+  color: white;
+}
+</style>
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.18.12/dist/style.css">
+</head>
+<body>
+<svg id="mindmap"></svg>
+<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.12/dist/browser/index.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.18.12/dist/index.js"></script><script>((r) => {
+          setTimeout(r);
+        })(() => {
+  const { markmap, mm } = window;
+  const toolbar = new markmap.Toolbar();
+  toolbar.attach(mm);
+  const el = toolbar.render();
+  el.setAttribute("style", "position:absolute;bottom:20px;right:20px");
+  document.body.append(el);
+})</script><script>((getMarkmap, getOptions, root2, jsonOptions) => {
+              const markmap = getMarkmap();
+              window.mm = markmap.Markmap.create(
+                "svg#mindmap",
+                (getOptions || markmap.deriveOptions)(jsonOptions),
+                root2
+              );
+              if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
+                document.documentElement.classList.add("markmap-dark");
+              }
+            })(() => window.markmap,null,{"content":"","children":[{"content":"**DOMESTICA **","children":[],"payload":{"tag":"h2","lines":"10,11"}},{"content":"**Simone Civitelli **","children":[],"payload":{"tag":"h2","lines":"44,45"}},{"content":"**Sommario **","children":[],"payload":{"tag":"h2","lines":"78,79"}},{"content":"**2 **","children":[],"payload":{"tag":"h2","lines":"216,217"}},{"content":"<strong>3</strong>","children":[],"payload":{"tag":"h2","lines":"344,345"}},{"content":"**4 **","children":[],"payload":{"tag":"h2","lines":"480,481"}},{"content":"**5 **","children":[],"payload":{"tag":"h2","lines":"642,643"}},{"content":"**6 **","children":[],"payload":{"tag":"h2","lines":"758,759"}},{"content":"**7 **","children":[],"payload":{"tag":"h2","lines":"860,861"}},{"content":"**8 **","children":[],"payload":{"tag":"h2","lines":"1022,1023"}},{"content":"**9 **","children":[],"payload":{"tag":"h2","lines":"1228,1229"}},{"content":"**10 **","children":[],"payload":{"tag":"h2","lines":"1404,1405"}},{"content":"**11 **","children":[],"payload":{"tag":"h2","lines":"1568,1569"}},{"content":"**12 **","children":[],"payload":{"tag":"h2","lines":"1724,1725"}},{"content":"**13 **","children":[],"payload":{"tag":"h2","lines":"1966,1967"}},{"content":"**14 **","children":[],"payload":{"tag":"h2","lines":"2148,2149"}},{"content":"**15 **","children":[],"payload":{"tag":"h2","lines":"2308,2309"}},{"content":"**16 **","children":[],"payload":{"tag":"h2","lines":"2458,2459"}},{"content":"<strong>17</strong>","children":[],"payload":{"tag":"h2","lines":"2602,2603"}},{"content":"**18 **","children":[],"payload":{"tag":"h2","lines":"2714,2715"}},{"content":"**19 **","children":[],"payload":{"tag":"h2","lines":"2876,2877"}},{"content":"**20 **","children":[],"payload":{"tag":"h2","lines":"3076,3077"}}]},null)</script>
+</body>
+</html>
