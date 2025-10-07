@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import { writeFile, mkdir, readdir, readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { promisify } from 'util';
-import { synthesizeContent } from './synthesize.mjs'; // Import the new intelligent synthesizer
+import { synthesizeContent } from './synthesize.js'; // Import the new intelligent synthesizer
 
 const execAsync = promisify(exec);
 

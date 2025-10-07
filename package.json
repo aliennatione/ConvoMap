@@ -1,25 +1,18 @@
 {
   "name": "convomap",
   "version": "1.0.0",
-  "description": "A tool to automatically convert chat logs (Markdown) into clean, interactive, and navigable mind maps.",
-  "main": "build.mjs",
+  "description": "",
+  "main": "index.js",
+  "type": "module",
   "scripts": {
-    "build": "node build.mjs",
-    "test": "echo \"Error: no test specified\" && exit 1"
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "build": "node build.js"
   },
-  "keywords": [
-    "mindmap",
-    "markmap",
-    "markdown",
-    "chat",
-    "visualization",
-    "automation",
-    "nodejs"
-  ],
+  "keywords": [],
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "@google/generative-ai": "^0.24.1",
-    "markmap-cli": "^0.18.12"
+    "@google/generative-ai": "^0.16.0",
+    "markmap-cli": "^0.17.0"
   }
 }
