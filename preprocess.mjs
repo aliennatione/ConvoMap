@@ -4,26 +4,72 @@ import path from 'path';
 const inputDir = './data';
 const outputDir = './processed_data';
 
+// List of conversational patterns to remove
+const conversationalPatterns = [
+  /^> /,
+  /^no, rispondi qui\./i,
+  /^Genera un progetto completo/i,
+  /^Fammi sapere/i,
+  /^Perfetto/i,
+  /^Se vuoi/i,
+  /^Dimmi pure/i,
+  /😊/,
+  /^Cosa vuoi fare ora\?/i,
+  /^Ottima scelta/i,
+  /^Hai ragione/i,
+  /^Mi scuso/i,
+  /^Certamente/i,
+  /^Ecco/i,
+  /^Certo/i,
+  /^Va bene/i,
+  /^Ok/i,
+  /^Grazie/i
+];
+
 async function preprocessFile(inputFile, outputFile) {
   try {
-    const data = await fs.readFile(inputFile, 'utf-8');
-    const lines = data.split('\n');
-    
-    // 1. Remove blockquotes, empty lines, and thematic breaks
-    const filteredLines = lines.filter(line => 
-      !line.trim().startsWith('>') && 
-      line.trim() !== '' &&
-      !line.trim().match(/^(---|\*\*\*|___)$/)
-    );
-    
-    // 2. Remove the first line if it is a level 1 heading
-    if (filteredLines.length > 0 && filteredLines[0].startsWith('# ')) {
-        filteredLines.shift();
+    let content = await fs.readFile(inputFile, 'utf-8');
+
+    // Specific fix for scc.md box-drawing characters
+    if (path.basename(inputFile) === 'scc.md') {
+      content = content.replace(/├/g, '*').replace(/─/g, '-').replace(/│/g, ' ');
     }
 
-    const processedContent = filteredLines.join('\n');
-    await fs.writeFile(outputFile, processedContent);
-    console.log(`Preprocessed: ${path.basename(inputFile)}`);
+    const lines = content.split('\n');
+    const processedLines = [];
+
+    let inCodeBlock = false;
+
+    for (const line of lines) {
+      const trimmedLine = line.trim();
+
+      if (trimmedLine.startsWith('```')) {
+        inCodeBlock = !inCodeBlock;
+        processedLines.push(line); // Keep code block delimiters
+        continue;
+      }
+
+      if (inCodeBlock) {
+        processedLines.push(line); // Keep all lines within code blocks as is
+        continue;
+      }
+
+      // Ignore lines matching conversational patterns
+      if (conversationalPatterns.some(pattern => pattern.test(trimmedLine))) {
+        continue;
+      }
+      
+      // Ignore empty lines and simple separators
+      if (trimmedLine === '' || trimmedLine === '---') {
+        continue;
+      }
+
+      processedLines.push(line);
+    }
+
+    await fs.writeFile(outputFile, processedLines.join('\n'));
+    console.log(`Preprocessed and structured: ${path.basename(inputFile)}`);
+
   } catch (error) {
     console.error(`Error processing ${inputFile}:`, error);
   }
@@ -40,9 +86,9 @@ async function main() {
         await preprocessFile(inputFile, outputFile);
       }
     }
-    console.log('Preprocessing complete.');
+    console.log('Advanced preprocessing complete.');
   } catch (error) {
-    console.error('Error during preprocessing:', error);
+    console.error('Error during advanced preprocessing:', error);
   }
 }
 

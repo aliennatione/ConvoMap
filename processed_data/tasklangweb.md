@@ -1,10 +1,15 @@
-Perfetto! Se il tuo obiettivo è istruire ChatGPT a **comportarsi come un esperto programmatore** con focus sull’**ideazione e scrittura di un nuovo linguaggio dichiarativo**, simile ad Ansible (quindi **idempotente, leggibile, basato su YAML o HCL**), allora possiamo **adattare il prompt** per enfatizzare:
 * Esperienza in **DSL** (Domain-Specific Languages)
 * Comprensione dei paradigmi **dichiarativi** e **infrastructure-as-code**
 * Capacità di **progettare sintassi**, **semantica**, e di confrontare strumenti esistenti
 * Approccio pragmatico alla **scrittura di un linguaggio "simile ad Ansible"**
 ### ✅ Prompt adattato per esperto programmatore – progettazione linguaggio dichiarativo stile Ansible
+>
+>
+>
+>
+>
 ### ✅ (Facoltativo) Prompt di esempio per un primo task
+>
 Vuoi che ti aiuti anche con una **specifica tecnica iniziale** del linguaggio (es. sintassi proposta, parser, formati, ecc.)? Posso generare un primo mockup o bozza DSL.
 Ottimo! Iniziamo allora con una **bozza tecnica** per un **nuovo linguaggio dichiarativo** ispirato ad Ansible, pensato per gestire automazioni su sistemi (es. provisioning, configurazione, deploy).
 L’obiettivo è creare un **DSL (Domain-Specific Language)** leggibile, modulare, e idempotente.
@@ -19,15 +24,18 @@ L’obiettivo è creare un **DSL (Domain-Specific Language)** leggibile, modular
 ## 📐 Struttura base di un file (`.task.yml`)
 ```yaml
 name: "Installazione e configurazione webserver"
+
 hosts: web_servers
 vars:
   package_name: nginx
   config_file_path: /etc/nginx/nginx.conf
+
 tasks:
   - name: Installare il pacchetto {{ package_name }}
     package:
       name: "{{ package_name }}"
       state: present
+
   - name: Scrivere il file di configurazione
     file:
       path: "{{ config_file_path }}"
@@ -35,6 +43,7 @@ tasks:
         user nginx;
         worker_processes auto;
       state: present
+
   - name: Abilitare e avviare il servizio
     service:
       name: nginx
@@ -98,7 +107,6 @@ Vuoi che ti aiuti con:
 3. 📦 Definizione delle **specifiche dei moduli** (come si definisce un modulo custom)?
 4. 🧭 Un manifesto tecnico del linguaggio (per documentazione ufficiale)?
 Dimmi tu dove vuoi andare più in profondità.
-Perfetto, chiarissimo.
 Quindi l’obiettivo **non è reinventare Ansible**, ma piuttosto:
 ## 🔍 Scenario aggiornato
 ### 🎯 **Obiettivo concreto**
@@ -132,6 +140,7 @@ service:
       loop:
         - nginx
         - php
+
     - name: Enable and start nginx
       service:
         name: nginx
@@ -172,7 +181,6 @@ Posso generarti:
 3. ✅ Output del playbook generato
 4. ✅ (facoltativo) Wrapper CLI che esegue tutto
 Dimmi solo da quale punto vuoi partire.
-Perfetto, procediamo **dall'inizio** con l’intero flusso, passo dopo passo.
 ## ✅ 1. Mini file DSL (semplificato)
 Salva questo come `example.task.yml`:
 ```yaml
@@ -193,9 +201,11 @@ Salva questo come `dsl_to_ansible.py`:
 import yaml
 import sys
 from pathlib import Path
+
 def convert_dsl_to_ansible(dsl_path):
     with open(dsl_path, "r") as f:
         dsl = yaml.safe_load(f)
+
     playbook = [
         {
             "name": dsl.get("name", "Generated Playbook"),
@@ -204,7 +214,9 @@ def convert_dsl_to_ansible(dsl_path):
             "tasks": []
         }
     ]
+
     tasks = playbook[0]["tasks"]
+
     # Handle packages
     packages = dsl.get("packages", [])
     if packages:
@@ -216,6 +228,7 @@ def convert_dsl_to_ansible(dsl_path):
             },
             "loop": packages
         })
+
     # Handle service
     service = dsl.get("service")
     if service:
@@ -227,16 +240,21 @@ def convert_dsl_to_ansible(dsl_path):
                 "state": service.get("state", "started")
             }
         })
+
     return playbook
+
 def save_playbook(playbook, output_path):
     with open(output_path, "w") as f:
         yaml.dump(playbook, f, sort_keys=False)
+
 if __name__ == "__main__":
     if len(sys.argv) != 3:
         print("Usage: python dsl_to_ansible.py input.task.yml output_playbook.yml")
         sys.exit(1)
+
     dsl_file = Path(sys.argv[1])
     output_file = Path(sys.argv[2])
+
     playbook = convert_dsl_to_ansible(dsl_file)
     save_playbook(playbook, output_file)
     print(f"✅ Playbook generato: {output_file}")
@@ -259,6 +277,7 @@ Il file `generated_playbook.yml` conterrà:
       loop:
         - nginx
         - php
+
     - name: Ensure nginx is running
       service:
         name: nginx
@@ -273,19 +292,24 @@ import subprocess
 from dsl_to_ansible import convert_dsl_to_ansible, save_playbook
 from pathlib import Path
 import sys
+
 def run_tasklang(dsl_file):
     dsl_path = Path(dsl_file)
     playbook_path = dsl_path.with_suffix(".playbook.yml")
+
     # Converti DSL → Ansible playbook
     playbook = convert_dsl_to_ansible(dsl_path)
     save_playbook(playbook, playbook_path)
+
     # Esegui con ansible-playbook
     print(f"▶️ Eseguendo Ansible su {playbook_path}...")
     subprocess.run(["ansible-playbook", "-i", "inventory.yml", str(playbook_path)])
+
 if __name__ == "__main__":
     if len(sys.argv) != 2:
         print("Usage: python tasklang.py example.task.yml")
         sys.exit(1)
+
     run_tasklang(sys.argv[1])
 ```
 ## ✅ Esempio d’uso completo
@@ -310,12 +334,10 @@ Hai ora un mini sistema che:
 * Import di più file DSL
 * Testing automatico (`ansible-lint`, `--check`)
 * Gestione dello stato (futuribile, tipo Terraform)
-Fammi sapere se vuoi che evolviamo questa base in:
 * 📦 un pacchetto CLI installabile (`pip install tasklang`)
 * 🌍 una web UI/DSL editor
 * 🧪 supporto Molecule/test automatici
 Oppure se vuoi integrare `OpenTofu` anche.
-Perfetto, passiamo alla creazione di una **Web UI per modificare ed eseguire file DSL** che generano ed eseguono Playbook Ansible.
 ## ✅ Obiettivo
 Creare un'interfaccia web minimale che permetta di:
 1. ✍️ Scrivere/modificare un file DSL semplificato (come `example.task.yml`)
@@ -349,23 +371,29 @@ from pathlib import Path
 import subprocess
 import tempfile
 import yaml
+
 app = Flask(__name__)
+
 @app.route('/')
 def index():
     with open('examples/default.task.yml') as f:
         default_dsl = f.read()
     return render_template('index.html', default_dsl=default_dsl)
+
 @app.route('/run', methods=['POST'])
 def run_tasklang():
     dsl_content = request.json['dsl']
     with tempfile.TemporaryDirectory() as tmpdir:
         dsl_path = Path(tmpdir) / "input.task.yml"
         pb_path = Path(tmpdir) / "generated_playbook.yml"
+        
         # Scrivi il file DSL temporaneo
         dsl_path.write_text(dsl_content)
+
         # Converti in Ansible
         playbook = convert_dsl_to_ansible(dsl_path)
         save_playbook(playbook, pb_path)
+
         # Esegui ansible-playbook
         result = subprocess.run(
             ["ansible-playbook", "-i", "inventory.yml", str(pb_path)],
@@ -374,6 +402,7 @@ def run_tasklang():
             text=True
         )
         return jsonify({"output": result.stdout})
+
 if __name__ == '__main__':
     app.run(debug=True)
 ```
@@ -396,6 +425,7 @@ if __name__ == '__main__':
   <button onclick="runDSL()">▶️ Esegui</button>
   <div id="editor"></div>
   <pre id="output">🔄 Output Ansible apparirà qui...</pre>
+
   <script>
     let editor;
     require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
@@ -406,6 +436,7 @@ if __name__ == '__main__':
             theme: 'vs-dark',
         });
     });
+
     function runDSL() {
         fetch('/run', {
             method: 'POST',
@@ -460,7 +491,6 @@ Questa è una demo **non sicura per ambienti pubblici o remoti**:
 * UI più elegante (con Bootstrap o Tailwind)
 * Deploy in container (Docker)
 Vuoi che ti crei anche un **contenitore Docker** per far girare tutta questa web UI in un click?
-Perfetto! Procediamo con un piano completo per **evolvere la Web UI di TaskLang**. Dividerò ogni punto in:
 * 🎯 Obiettivo
 * 🔧 Implementazione
 * ✅ Codice di esempio
@@ -495,6 +525,7 @@ Permettere all’utente di scaricare il file YAML generato per eseguirlo altrove
 ### ✅ Backend (`app.py`):
 ```python
 from flask import send_file
+
 @app.route('/download', methods=['POST'])
 def download_playbook():
     dsl_content = request.json['dsl']
@@ -539,6 +570,7 @@ file:
   path: /tmp/demo.txt
   content: "ciao mondo"
   state: present
+
 user:
   name: "deploy"
   state: present
@@ -555,6 +587,7 @@ if file_def:
             "content": file_def.get("content", ""),
         }
     })
+
 # Gestione modulo user
 user_def = dsl.get("user")
 if user_def:
@@ -593,10 +626,15 @@ Rendere l’app facile da installare e avviare in un container.
 ### ✅ `Dockerfile`
 ```Dockerfile
 FROM python:3.10-slim
+
 WORKDIR /app
+
 COPY . /app
+
 RUN pip install flask pyyaml ansible
+
 EXPOSE 5000
+
 CMD ["python", "app.py"]
 ```
 ### ✅ `docker-compose.yml` (opzionale)
@@ -627,8 +665,6 @@ Hai ora un sistema completo:
 * ✅ Download del playbook
 * ✅ UI responsive ed elegante
 * ✅ Deploy con Docker
-Fammi sapere se vuoi un **repo GitHub già pronto**, oppure se preferisci che ti generi tutto in uno ZIP scaricabile.
-Eccoti un **progetto completo e coeso**, pronto per essere usato come repository GitHub, basato su quanto discusso in questa chat.
 Il risultato è una webapp con editor dichiarativo semplificato che genera ed esegue playbook **Ansible** sfruttando una DSL YAML minimale, il tutto con un’interfaccia elegante e un sistema di conversione + validazione + esecuzione backend.
 ## 🗂️ Struttura del progetto
 ```
@@ -652,14 +688,23 @@ tasklang-web/
 ## 📄 `README.md`
 ````markdown
 # 🛠️ TaskLang Web
+
 TaskLang Web è una webapp interattiva che permette di scrivere una **DSL YAML semplificata** per configurare infrastrutture, convertirla automaticamente in **playbook Ansible**, ed eseguirla direttamente da interfaccia grafica.  
 È pensata per semplificare l’uso di Ansible a sviluppatori e sysadmin non esperti, offrendo un’interfaccia accessibile ma potente.
+
+---
+
 ## 🎯 Obiettivi
+
 - Offrire un linguaggio dichiarativo più semplice e opinato rispetto ad Ansible
 - Generare playbook validi, compatibili e riutilizzabili
 - Eseguire task su host locali o remoti via Ansible
 - Fornire un’interfaccia web elegante, facile da usare e sicura (per uso locale)
+
+---
+
 ## 📦 Tecnologie utilizzate
+
 | Componente | Tecnologia     |
 |------------|----------------|
 | Backend    | Python 3.10 + Flask |
@@ -667,36 +712,58 @@ TaskLang Web è una webapp interattiva che permette di scrivere una **DSL YAML s
 | Motore     | Ansible        |
 | UI Web     | HTML, JS, Monaco Editor, Bootstrap |
 | Container  | Docker, docker-compose (opzionale) |
+
+---
+
 ## ⚙️ Installazione (locale)
+
 ### 1. Clona il repository
+
 ```bash
 git clone https://github.com/tuo-utente/tasklang-web.git
 cd tasklang-web
 ````
+
 ### 2. Crea ambiente virtuale (opzionale)
+
 ```bash
 python -m venv .venv
 source .venv/bin/activate
 ```
+
 ### 3. Installa le dipendenze
+
 ```bash
 pip install -r requirements.txt
 ```
+
 ### 4. Avvia l'applicazione
+
 ```bash
 python app.py
 ```
+
 Apri il browser su: [http://localhost:5000](http://localhost:5000)
+
+---
+
 ## 🐳 Esecuzione con Docker
+
 ```bash
 docker build -t tasklang .
 docker run -p 5000:5000 tasklang
 ```
+
 Oppure con docker-compose:
+
 ```bash
 docker-compose up
 ```
+
+---
+
 ## 💡 Esempio DSL (`examples/default.task.yml`)
+
 ```yaml
 name: "Setup Web Server"
 hosts: web
@@ -715,7 +782,11 @@ file:
   content: "Ciao dal TaskLang!"
   state: present
 ```
+
+---
+
 ## 📝 DSL supportata
+
 | Componente | Descrizione                    |
 | ---------- | ------------------------------ |
 | `hosts`    | Target host/group              |
@@ -723,55 +794,86 @@ file:
 | `service`  | Avvio/abilitazione servizio    |
 | `user`     | Creazione utente di sistema    |
 | `file`     | Creazione file con contenuto   |
+
+---
+
 ## 📁 Inventory di esempio
+
 `inventory.yml`
+
 ```ini
 [web]
 localhost ansible_connection=local
 ```
+
+---
+
 ## 📤 Funzionalità Web
+
 * ✍️ Editor DSL con sintassi evidenziata (Monaco)
 * ✅ Validazione sintattica DSL
 * 🔄 Conversione in Ansible YAML
 * ▶️ Esecuzione playbook con output live
 * 💾 Download playbook generato
+
+---
+
 ## 🧪 Test
+
 Avvio test manuale:
+
 ```bash
 curl -X POST http://localhost:5000/run \
      -H "Content-Type: application/json" \
      -d @tests/test_payload.json
 ```
+
+---
+
 ## 📄 Licenza
+
 Questo progetto è rilasciato con licenza **MIT**. Vedi [LICENSE](LICENSE).
+
+---
+
 ## 🤝 Contribuire
+
 Contributi benvenuti! Apri una issue o manda una PR.
+
 ```
 ## 📁 `requirements.txt`
 ```
+
 Flask
 PyYAML
 ansible
+
 ````
 ## 🐍 `dsl_to_ansible.py`
 ```python
 import yaml
+
 def validate_dsl(dsl):
     if 'hosts' not in dsl:
         raise ValueError("Campo 'hosts' mancante nel DSL")
     if not any(k in dsl for k in ['packages', 'service', 'file', 'user']):
         raise ValueError("Il DSL deve contenere almeno uno tra: 'packages', 'service', 'file', 'user'")
+
 def convert_dsl_to_ansible(dsl_path):
     with open(dsl_path, "r") as f:
         dsl = yaml.safe_load(f)
+
     validate_dsl(dsl)
+
     playbook = [{
         "name": dsl.get("name", "Generated Playbook"),
         "hosts": dsl["hosts"],
         "become": True,
         "tasks": []
     }]
+
     tasks = playbook[0]["tasks"]
+
     if packages := dsl.get("packages"):
         tasks.append({
             "name": "Install packages",
@@ -781,6 +883,7 @@ def convert_dsl_to_ansible(dsl_path):
             },
             "loop": packages
         })
+
     if service := dsl.get("service"):
         tasks.append({
             "name": f"Ensure {service['name']} is running",
@@ -790,6 +893,7 @@ def convert_dsl_to_ansible(dsl_path):
                 "state": service.get("state", "started")
             }
         })
+
     if user := dsl.get("user"):
         tasks.append({
             "name": f"Ensure user {user['name']} exists",
@@ -798,6 +902,7 @@ def convert_dsl_to_ansible(dsl_path):
                 "state": user.get("state", "present")
             }
         })
+
     if file := dsl.get("file"):
         tasks.append({
             "name": f"Ensure file {file['path']} exists",
@@ -806,7 +911,9 @@ def convert_dsl_to_ansible(dsl_path):
                 "content": file.get("content", "")
             }
         })
+
     return playbook
+
 def save_playbook(playbook, output_path):
     with open(output_path, "w") as f:
         yaml.dump(playbook, f, sort_keys=False)
@@ -819,12 +926,15 @@ from pathlib import Path
 import subprocess
 import tempfile
 import yaml
+
 app = Flask(__name__)
+
 @app.route('/')
 def index():
     with open('examples/default.task.yml') as f:
         default_dsl = f.read()
     return render_template('index.html', default_dsl=default_dsl)
+
 @app.route('/run', methods=['POST'])
 def run_tasklang():
     dsl_content = request.json['dsl']
@@ -832,6 +942,7 @@ def run_tasklang():
         dsl = yaml.safe_load(dsl_content)
     except Exception as e:
         return jsonify({"error": f"Errore parsing YAML: {e}"}), 400
+
     with tempfile.TemporaryDirectory() as tmpdir:
         dsl_path = Path(tmpdir) / "input.task.yml"
         pb_path = Path(tmpdir) / "generated_playbook.yml"
@@ -841,6 +952,7 @@ def run_tasklang():
             save_playbook(playbook, pb_path)
         except Exception as e:
             return jsonify({"error": str(e)}), 400
+
         result = subprocess.run(
             ["ansible-playbook", "-i", "inventory.yml", str(pb_path)],
             stdout=subprocess.PIPE,
@@ -848,6 +960,7 @@ def run_tasklang():
             text=True
         )
         return jsonify({"output": result.stdout})
+
 @app.route('/download', methods=['POST'])
 def download_playbook():
     dsl_content = request.json['dsl']
@@ -859,6 +972,7 @@ def download_playbook():
         playbook = convert_dsl_to_ansible(dsl_path)
         save_playbook(playbook, pb_path)
         return send_file(pb_path, as_attachment=True)
+
 if __name__ == '__main__':
     app.run(debug=True)
 ```
@@ -895,16 +1009,21 @@ if __name__ == '__main__':
 <body>
   <div class="container mt-4">
     <h1 class="mb-4">🛠️ TaskLang Web Editor</h1>
+
     <div class="mb-3">
       <button class="btn btn-success me-2" onclick="runDSL()">▶️ Esegui</button>
       <button class="btn btn-primary me-2" onclick="downloadPlaybook()">💾 Scarica Playbook</button>
     </div>
+
     <div id="editor" class="border rounded"></div>
+
     <h5 class="mt-4">Output Ansible:</h5>
     <pre id="output">🔄 Output in attesa...</pre>
   </div>
+
   <script>
     let editor;
+
     require.config({ paths: { 'vs': 'https://cdnjs.cloudflare.com/ajax/libs/monaco-editor/0.44.0/min/vs' }});
     require(['vs/editor/editor.main'], function () {
       editor = monaco.editor.create(document.getElementById('editor'), {
@@ -914,6 +1033,7 @@ if __name__ == '__main__':
         automaticLayout: true,
       });
     });
+
     function runDSL() {
       fetch('/run', {
         method: 'POST',
@@ -932,6 +1052,7 @@ if __name__ == '__main__':
         document.getElementById('output').textContent = "❌ Errore imprevisto: " + err;
       });
     }
+
     function downloadPlaybook() {
       fetch('/download', {
         method: 'POST',
@@ -980,10 +1101,15 @@ localhost ansible_connection=local
 ## 🐋 `Dockerfile`
 ```dockerfile
 FROM python:3.10-slim
+
 WORKDIR /app
+
 COPY . /app
+
 RUN pip install --no-cache-dir -r requirements.txt
+
 EXPOSE 5000
+
 CMD ["python", "app.py"]
 ```
 ## 📄 `docker-compose.yml`
@@ -1017,10 +1143,13 @@ __pycache__/
 ## 📄 `LICENSE` (MIT)
 ```text
 MIT License
+
 Copyright (c) 2025 [TUO_NOME]
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction...
+
 [Troncato per brevità: inserisci testo completo della licenza MIT qui]
 ```
 Puoi generarla automaticamente da GitHub al momento della creazione del repository, oppure chiedermi di completarla se vuoi tutta la licenza.
@@ -1028,14 +1157,13 @@ Puoi generarla automaticamente da GitHub al momento della creazione del reposito
 * **Pubblicato su GitHub**
 * **Eseguito in locale o in container**
 * **Esteso con nuove feature o moduli**
-Se vuoi, posso anche fornirti uno ZIP scaricabile o preparare direttamente un `gh repo create`. Fammi sapere!
-Ecco una proposta professionale per **titolo e descrizione della repository GitHub** del progetto:
 ### 🏷️ **Titolo della repository**
 ```
 tasklang-web
 ```
 ### 📝 **Descrizione (breve per GitHub)**
 ### 📌 **Descrizione lunga (per la sezione About del repo o README)**
+>
 ### 💡 Suggerimento GitHub Topics
 Puoi anche aggiungere questi **topics** al repository per migliorarne la scoperta:
 ```

@@ -79,13 +79,10 @@ securityContext:
 # 7) Conclusione pratica
 * Se il tuo container **gira come root** e ha **volumi host importanti** o `docker.sock` montato → **alto rischio**: un attaccante con shell può realisticamente compromettere il VPS.
 * Se gira **non-root**, senza mount host sensibili, con capabilities droppate, `no_new_privs` e profili seccomp/AppArmor → **rischio molto ridotto**, resta però la possibilità residua dovuta a vulnerabilità del kernel/runtime (zero‑day).
-Se vuoi, posso:
 * fornirti un file `docker-compose.yml` o `docker run` esatto adattato alla tua configurazione (senza chiederti nulla di nuovo — userò impostazioni conservative),
 * mostrarti come verificare *esattamente* se la tua immagine/istanza sta girando come root e quali mount ha (comandi già inclusi sopra).
 Dimmi se preferisci che ti generi il `docker-compose` sicuro e lo configuriamo insieme.
 proviamo a vedere se, dal terminale di vscode, entriamo davvero nel vps?
-Perfetto, possiamo fare un controllo rapido per capire se il terminale di `codium-server` (VSCode Web) ha accesso all’**host VPS** oppure è confinato dentro al **container**.
-Ecco **una serie di comandi di diagnosi** da eseguire dal terminale integrato in codium-server:
 ## ✅ **1. Dove siamo?**
 Controlla se sei dentro un container:
 ```bash
@@ -168,7 +165,6 @@ Posso darti uno script bash che fa tutti questi controlli e ti dà una risposta 
 **"Rischio ALTO: container ha accesso all’host"**
 oppure
 **"Rischio BASSO: isolamento attivo, container ben configurato"**
-Fammi sapere l'output dei comandi, o se vuoi lo script automatico. In base a ciò che scopriamo, posso dirti con buona certezza se sei a rischio *host breakout* oppure no.
 script automatico, così poi lo onfrontiamo con l'output dei comandi immessi manualmente.... eccoli:
 abc@7d57ad7d93ce:~$ cat /proc/1/cgroup
 0::/
@@ -211,13 +207,13 @@ bash: docker: command not found
 abc@7d57ad7d93ce:~$ lsblk
 NAME    MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
 vda     254:0    0   160G  0 disk 
-├─vda1  254:1    0 159.9G  0 part /etc/hosts
-│                                 /etc/hostname
-│                                 /etc/resolv.conf
-│                                 /workspace
-│                                 /config
-├─vda14 254:14   0     3M  0 part 
-└─vda15 254:15   0   124M  0 part 
+*-vda1  254:1    0 159.9G  0 part /etc/hosts
+                                  /etc/hostname
+                                  /etc/resolv.conf
+                                  /workspace
+                                  /config
+*-vda14 254:14   0     3M  0 part 
+└-vda15 254:15   0   124M  0 part 
 abc@7d57ad7d93ce:~$ ps aux | grep root
 root           1  0.0  0.0    440    52 ?        Ss   Jul06   0:00 /package/admin/s6/command/s6-svscan -d4 -- /run/service
 root          17  0.0  0.0    220    28 ?        S    Jul06   0:00 s6-supervise s6-linux-init-shutdownd
@@ -236,7 +232,6 @@ abc@7d57ad7d93ce:~$ cat /proc/self/uid_map
 abc@7d57ad7d93ce:~$ capsh --print
 bash: capsh: command not found
 abc@7d57ad7d93ce:~$ 
-Grazie, l’output è molto utile. Vediamo prima **una valutazione dettagliata del rischio reale** basata su ciò che hai ottenuto, e poi ti fornisco **lo script automatico** come richiesto.
 ## 🔍 Valutazione dei risultati
 ### ✅ Indicatori positivi (rischio ridotto):
 * ✅ **Utente non-root** (`abc`, UID 1000): il processo interattivo gira come utente limitato.
@@ -265,65 +260,82 @@ Grazie, l’output è molto utile. Vediamo prima **una valutazione dettagliata d
   ```
   → se un utente riesce a diventare root (es. `sudo`, exploit), ha la *stessa UID 0 anche sull’host*, e può potenzialmente comprometterti.
 ### 🧠 Diagnosi complessiva:
+>
+>
 ## 🛠️ Script automatico per valutazione del contenitore
-Ecco uno script bash da eseguire nel terminale di codium-server per ripetere tutti i test e ottenere una diagnosi automatica:
 ```bash
 #!/bin/bash
+
 echo "=== Container Security Check ==="
+
 echo -n "[1] Container Environment Check: "
 if grep -qa docker /proc/1/cgroup || grep -qa lxc /proc/1/cgroup; then
     echo "Container detected"
 else
     echo "Not clearly in a container"
 fi
+
 echo -n "[2] User Check: "
 whoami
 id
+
 echo -n "[3] UID Map: "
 cat /proc/self/uid_map
+
 echo -n "[4] Sensitive Mounts: "
 mount | grep -E '/etc/(hostname|hosts|resolv.conf)' | grep -v overlay
+
 echo -n "[5] Docker Socket: "
 if [ -S /var/run/docker.sock ]; then
     echo "Accessible!"
 else
     echo "Not present"
 fi
+
 echo -n "[6] Docker Command: "
 if command -v docker &>/dev/null; then
     echo "Available"
 else
     echo "Not found"
 fi
+
 echo -n "[7] Capabilities (capsh): "
 if command -v capsh &>/dev/null; then
     capsh --print | grep "Current"
 else
     echo "capsh not found"
 fi
+
 echo -n "[8] lsblk output: "
 lsblk | grep -v "loop"
+
 echo -n "[9] Root Processes: "
 ps -U root -u root u | head -n 10
+
 echo -e "\n=== Assessment ==="
+
 # Simple heuristic risk rating
 uid_map=$(cat /proc/self/uid_map)
 docker_sock=$(test -S /var/run/docker.sock && echo "yes" || echo "no")
+
 if echo "$uid_map" | grep -q "         0          0"; then
     echo "❌ UID 0 not remapped — high risk if root is reached"
 else
     echo "✅ UID remapped — good isolation"
 fi
+
 if [ "$docker_sock" = "yes" ]; then
     echo "❌ Docker socket mounted — can control host"
 else
     echo "✅ Docker socket not accessible"
 fi
+
 if id | grep -q "uid=0"; then
     echo "❌ Running as root"
 else
     echo "✅ Running as non-root"
 fi
+
 echo -e "=== Done ==="
 ```
 ### ▶️ Come eseguirlo
@@ -341,7 +353,6 @@ echo -e "=== Done ==="
    ./check_container.sh
    ```
 ## ✅ Prossimo passo consigliato
-Se vuoi abbassare il rischio:
 * **Abilita user namespaces remap** (esegui il container con remapping UID → root del container ≠ root dell'host).
 * Esegui `codium-server` come non-root all'interno del container (ok, già fatto).
 * Monta solo i volumi strettamente necessari, **usa read-only quando possibile**.
@@ -358,14 +369,18 @@ Ottima richiesta — ti preparo uno **script Bash completo**, che:
 ## ✅ **Script Bash: `secure_container_check.sh`**
 ```bash
 #!/bin/bash
+
 # File di log
 LOGFILE="container_check.log"
 exec > >(tee -a "$LOGFILE") 2>&1
+
 echo "=============================="
 echo "🚧 Container Security Checker"
 echo "📅 Date: $(date)"
 echo "=============================="
+
 score=0
+
 # --- 1. Rileva ambiente container ---
 echo -e "\n[1] 🔍 Ambiente container:"
 if grep -qaE 'docker|lxc' /proc/1/cgroup; then
@@ -374,16 +389,19 @@ else
     echo "⚠️  Ambiente non chiaramente containerizzato"
     ((score+=1))
 fi
+
 # --- 2. Verifica utente ---
 echo -e "\n[2] 👤 Utente attuale:"
 whoami
 id
+
 if [ "$(id -u)" -eq 0 ]; then
     echo "❌ Attenzione: il container gira come root"
     ((score+=2))
 else
     echo "✅ Il container gira come utente non-root"
 fi
+
 # --- 3. UID remap ---
 echo -e "\n[3] 🔐 UID Mapping:"
 cat /proc/self/uid_map
@@ -393,16 +411,19 @@ if grep -q '0[[:space:]]\+0' /proc/self/uid_map; then
 else
     echo "✅ UID remappato correttamente"
 fi
+
 # --- 4. Mount sensibili ---
 echo -e "\n[4] 📂 Mount sensibili:"
 mount | grep -E '/etc/(hostname|hosts|resolv.conf)' | grep -v overlay
 mount | grep -E '/(workspace|config)' | grep -v overlay
+
 if mount | grep -Eq '/etc/(hostname|hosts|resolv.conf)'; then
     echo "⚠️  File dell'host montati nel container"
     ((score+=2))
 else
     echo "✅ Nessun file critico dell'host montato"
 fi
+
 # --- 5. Docker socket ---
 echo -e "\n[5] 🐳 Docker socket:"
 if [ -S /var/run/docker.sock ]; then
@@ -411,6 +432,7 @@ if [ -S /var/run/docker.sock ]; then
 else
     echo "✅ Docker socket non accessibile"
 fi
+
 # --- 6. Comando docker ---
 echo -e "\n[6] 🧰 Comando Docker disponibile?"
 if command -v docker &>/dev/null; then
@@ -419,6 +441,7 @@ if command -v docker &>/dev/null; then
 else
     echo "✅ Docker non presente"
 fi
+
 # --- 7. Capabilities ---
 echo -e "\n[7] 🛡️  Capabilities (capsh):"
 if command -v capsh &>/dev/null; then
@@ -426,37 +449,47 @@ if command -v capsh &>/dev/null; then
 else
     echo "ℹ️  capsh non disponibile — salta controllo"
 fi
+
 # --- 8. lsblk ---
 echo -e "\n[8] 💽 lsblk output:"
 lsblk | grep -v "loop"
+
 # --- 9. Processi root ---
 echo -e "\n[9] ⚙️  Processi root attivi nel container:"
 ps -U root -u root u | head -n 10
+
 # --- 10. Consigli personalizzati ---
 echo -e "\n=============================="
 echo "🧠 CONSIGLI PERSONALIZZATI"
 echo "=============================="
+
 if [ "$(id -u)" -eq 0 ]; then
     echo "➡️  Esegui il container come utente non-root con:    --user 1000:1000"
 fi
+
 if grep -q '0[[:space:]]\+0' /proc/self/uid_map; then
     echo "➡️  Abilita user namespaces remap per isolare root dal container: vedi 'userns-remap' in Docker daemon"
 fi
+
 if [ -S /var/run/docker.sock ]; then
     echo "➡️  Rimuovi il mount di /var/run/docker.sock: può dare accesso root all'host!"
 fi
+
 if mount | grep -Eq '/etc/(hostname|hosts|resolv.conf)'; then
     echo "➡️  Evita di montare /etc/hostname, /etc/hosts nel container a meno che strettamente necessario"
 fi
+
 echo "➡️  Aggiungi queste opzioni al run/compose per hardening:"
 echo "    --cap-drop=ALL"
 echo "    --security-opt no-new-privileges:true"
 echo "    --read-only"
 echo "    --tmpfs /tmp"
+
 # --- 11. Diagnosi finale ---
 echo -e "\n=============================="
 echo "✅ VALUTAZIONE FINALE"
 echo "=============================="
+
 if [ $score -ge 8 ]; then
     echo "❌ RISCHIO ALTO: il container potrebbe compromettere l'host"
 elif [ $score -ge 4 ]; then
@@ -464,6 +497,7 @@ elif [ $score -ge 4 ]; then
 else
     echo "✅ RISCHIO BASSO: configurazione generalmente sicura"
 fi
+
 echo -e "\n📄 Log salvato in: $LOGFILE"
 ```
 ## ▶️ Come usarlo
@@ -492,9 +526,7 @@ Vuoi che aggiunga anche:
 * il check per AppArmor o Seccomp attivi?
 * un controllo se i file del container sono scrivibili?
 * generazione automatica di un comando `docker run` sicuro?
-Fammi sapere se vuoi una versione estesa.
 si, rendi lo cript migliore: con maggiori funzioni, più ottimizzato, col codice modularizzato e commentato bene in italiano, ecc...
-Perfetto! Ecco lo **script Bash avanzato**, migliorato in ogni aspetto:
 * ✅ Codice **modularizzato in funzioni**
 * ✅ Commenti dettagliati **in italiano**
 * ✅ Analisi più completa (inclusi **Seccomp**, **AppArmor**, **filesystem accessibile**, ecc.)
@@ -504,16 +536,20 @@ Perfetto! Ecco lo **script Bash avanzato**, migliorato in ogni aspetto:
 ## 🛡️ **`secure_container_check.sh` — Versione Avanzata**
 ```bash
 #!/bin/bash
+
 # ================================
 # 🛡️ Secure Container Check Script
 # 📦 Verifica se il container è isolato in modo sicuro dall'host
 # 📝 Salva tutto l'output in un file di log
 # ================================
+
 LOGFILE="container_check.log"
 exec > >(tee -a "$LOGFILE") 2>&1
 DATE=$(date)
+
 # Variabile punteggio di rischio
 risk_score=0
+
 # -------------------------------
 # Funzione: Header
 # -------------------------------
@@ -523,6 +559,7 @@ print_header() {
     echo "📅 Data: $DATE"
     echo "======================================"
 }
+
 # -------------------------------
 # Funzione: Verifica ambiente container
 # -------------------------------
@@ -535,6 +572,7 @@ check_container_environment() {
         ((risk_score+=2))
     fi
 }
+
 # -------------------------------
 # Funzione: Utente attuale
 # -------------------------------
@@ -548,6 +586,7 @@ check_user() {
         echo "✅ Utente non-root: $(whoami)"
     fi
 }
+
 # -------------------------------
 # Funzione: UID Mapping
 # -------------------------------
@@ -562,6 +601,7 @@ check_uid_map() {
         echo "✅ UID remappato: isolamento attivo"
     fi
 }
+
 # -------------------------------
 # Funzione: Verifica mount critici
 # -------------------------------
@@ -576,6 +616,7 @@ check_sensitive_mounts() {
         echo "✅ Nessun mount sensibile rilevato"
     fi
 }
+
 # -------------------------------
 # Funzione: Docker socket
 # -------------------------------
@@ -588,6 +629,7 @@ check_docker_socket() {
         echo "✅ Nessun accesso a Docker socket"
     fi
 }
+
 # -------------------------------
 # Funzione: Comando docker
 # -------------------------------
@@ -600,6 +642,7 @@ check_docker_command() {
         echo "✅ Docker non installato"
     fi
 }
+
 # -------------------------------
 # Funzione: Capabilities
 # -------------------------------
@@ -611,11 +654,13 @@ check_capabilities() {
         echo "ℹ️  capsh non disponibile - non è possibile controllare le capabilities"
     fi
 }
+
 # -------------------------------
 # Funzione: Seccomp e AppArmor
 # -------------------------------
 check_seccomp_apparmor() {
     echo -e "\n[8] 🔒 Controllo Seccomp e AppArmor..."
+    
     if grep -q Seccomp /proc/1/status; then
         SEC=$(grep Seccomp /proc/1/status | awk '{print $2}')
         case "$SEC" in
@@ -626,6 +671,7 @@ check_seccomp_apparmor() {
     else
         echo "⚠️  Seccomp non rilevabile"
     fi
+
     if [ -f /proc/1/attr/current ]; then
         AA=$(cat /proc/1/attr/current)
         if [[ "$AA" == "unconfined" ]]; then
@@ -638,6 +684,7 @@ check_seccomp_apparmor() {
         echo "⚠️  AppArmor non supportato o non attivo"
     fi
 }
+
 # -------------------------------
 # Funzione: Accesso a disco
 # -------------------------------
@@ -656,6 +703,7 @@ check_lsblk() {
         echo "ℹ️  lsblk non disponibile"
     fi
 }
+
 # -------------------------------
 # Funzione: Processi root
 # -------------------------------
@@ -663,6 +711,7 @@ check_root_processes() {
     echo -e "\n[10] ⚙️  Processi root attivi nel container:"
     ps -U root -u root u | head -n 10
 }
+
 # -------------------------------
 # Funzione: Suggerimenti
 # -------------------------------
@@ -670,6 +719,7 @@ print_suggestions() {
     echo -e "\n=============================="
     echo "🧠 SUGGERIMENTI DI HARDENING"
     echo "=============================="
+
     echo "➡️  Esegui il container come utente non-root: --user 1000:1000"
     echo "➡️  Abilita userns-remap per isolare l'UID 0 dal container"
     echo "➡️  Evita mount di /etc/hostname, /etc/hosts, ecc."
@@ -680,6 +730,7 @@ print_suggestions() {
     echo "    --read-only"
     echo "    --tmpfs /tmp"
 }
+
 # -------------------------------
 # Funzione: Diagnosi finale
 # -------------------------------
@@ -696,6 +747,7 @@ final_assessment() {
     fi
     echo "📄 Log completo salvato in: $LOGFILE"
 }
+
 # -------------------------------
 # 🔁 Esecuzione sequenziale
 # -------------------------------
@@ -736,7 +788,6 @@ Output in JSON per CI/CD o automazione
 * Integrazione con `docker inspect`
 * Esportazione HTML dei risultati
 * Notifiche Telegram/email in caso di rischio alto
-Fammi sapere se vuoi anche uno script per **generare automaticamente un `docker run` o `compose` sicuro**, basato sull’output!
 molto bene... come si potrebbe migliorare ulteriormente questo progetto?
 a me interessano molto, nell'ordine:
 - Generare automaticamente un docker run e un compose sicuri (magari se fosse possibile potendo anche indicare i file originali da modificare, di modo che lo script li analizzi), basato sull’output
@@ -744,7 +795,6 @@ a me interessano molto, nell'ordine:
 - Integrazione con docker inspect
 - Esportazione HTML dei risultati
 - Notifiche Telegram/email in caso di rischio alto
-Genera un progetto completo e coeso basato sull'intero contenuto di questa chat. Il risultato deve essere un unico output esaustivo che includa tutti i componenti necessari come se fosse un repository Git pronto per la pubblicazione. Il progetto deve contenere:
 1. Una descrizione chiara e dettagliata nel file `README.md`, comprensiva di:
    * Obiettivi del progetto
    * Contesto e finalità
@@ -762,89 +812,129 @@ Genera un progetto completo e coeso basato sull'intero contenuto di questa chat.
 5. Un file `.gitignore` coerente con il progetto
 6. Licenza del progetto (`LICENSE`), preferibilmente una licenza open-source
 L’output deve essere completo, dettagliato e pronto per essere copiato/incollato come base per un vero repository su GitHub. Assicurati di non tralasciare nulla e di integrare tutte le informazioni discusse in chat in modo organico.
-Ecco un progetto completo, coeso e organizzato basato su **tutti i contenuti** emersi nella chat, progettato per essere **un repository GitHub pubblicabile**, funzionale e facilmente estendibile.
 Il progetto analizza e rafforza la sicurezza dei container Docker, con funzioni avanzate di auditing, reportistica, generazione automatica di configurazioni sicure e alerting.
 ## 📁 Struttura finale del progetto
 ```bash
 secure-container-check/
-├── .gitignore
-├── LICENSE
-├── README.md
-├── requirements.txt
-├── secure_container_check.sh             # Script principale (Bash)
-├── src/
-│   ├── generator.py                      # Generatore Docker Run e Compose sicuri
-│   ├── reporter.py                       # Output JSON/HTML
-│   ├── inspector.py                      # Analisi tramite docker inspect
-│   └── notifier.py                       # Notifiche Telegram / Email
-├── config/
-│   └── config.json                       # Configurazioni generali
-│   └── .env.example                      # Esempio variabili d’ambiente
-├── examples/
-│   ├── docker-compose.insecure.yml       # Esempio insicuro
-│   └── docker-compose.secure.generated.yml
-├── scripts/
-│   └── run_full_analysis.sh              # Esecuzione completa integrata
-├── tests/
-│   └── test_generator.py
-│   └── test_reporter.py
-└── docs/
-    └── SECURITY_GUIDELINES.md           # Linee guida container hardening
+*-- .gitignore
+*-- LICENSE
+*-- README.md
+*-- requirements.txt
+*-- secure_container_check.sh             # Script principale (Bash)
+*-- src/
+    *-- generator.py                      # Generatore Docker Run e Compose sicuri
+    *-- reporter.py                       # Output JSON/HTML
+    *-- inspector.py                      # Analisi tramite docker inspect
+    └-- notifier.py                       # Notifiche Telegram / Email
+*-- config/
+    └-- config.json                       # Configurazioni generali
+    └-- .env.example                      # Esempio variabili d’ambiente
+*-- examples/
+    *-- docker-compose.insecure.yml       # Esempio insicuro
+    └-- docker-compose.secure.generated.yml
+*-- scripts/
+    └-- run_full_analysis.sh              # Esecuzione completa integrata
+*-- tests/
+    └-- test_generator.py
+    └-- test_reporter.py
+└-- docs/
+    └-- SECURITY_GUIDELINES.md           # Linee guida container hardening
 ```
 ## 📘 `README.md`
 ````markdown
 # 🔐 Secure Container Check
+
 Un toolkit avanzato per l'analisi e la messa in sicurezza dei container Docker, progettato per sviluppatori, DevOps e team di sicurezza.
+
+---
+
 ## 🚀 Obiettivi
+
 - Analizzare l'ambiente container per scoprire vulnerabilità di configurazione
 - Generare comandi `docker run` e file `docker-compose.yml` sicuri automaticamente
 - Fornire output in formato JSON/HTML per automazione CI/CD
 - Inviare alert via Telegram/Email se il rischio è elevato
+
+---
+
 ## 📚 Contesto
+
 L’uso di container Docker è estremamente diffuso, ma spesso vengono eseguiti con permessi troppo elevati o configurazioni poco sicure. Questo progetto aiuta ad automatizzare e standardizzare le verifiche di sicurezza, anche in ambienti CI/CD, con funzionalità di audit, suggerimenti e correzione automatica.
+
+---
+
 ## 🛠️ Tecnologie utilizzate
+
 - 🐚 Bash (per audit rapido e portatile)
 - 🐍 Python 3.10+ (`src/` per automazioni avanzate)
 - 📦 Docker
 - 📜 JSON / YAML
 - 📡 Telegram Bot API (opzionale)
+
+---
+
 ## 📦 Installazione
+
 ```bash
 git clone https://github.com/tuo-utente/secure-container-check.git
 cd secure-container-check
 pip install -r requirements.txt
 ````
+
+---
+
 ## ▶️ Utilizzo rapido
+
 ```bash
 # Solo check statico (Bash)
 bash secure_container_check.sh
 # Analisi completa con output JSON/HTML, generazione compose, notifiche
 bash scripts/run_full_analysis.sh
 ```
+
+---
+
 ## 🧪 Esempi
+
 ```bash
 # Genera file docker-compose sicuro partendo da uno insicuro
 python3 src/generator.py examples/docker-compose.insecure.yml
 ```
+
+---
+
 ## ⚙️ Configurazione notifiche
+
 Modifica `.env`:
+
 ```env
 TELEGRAM_TOKEN=123456:ABC-DEF
 TELEGRAM_CHAT_ID=987654321
 ENABLE_EMAIL=false
 ```
+
+---
+
 ## 📄 Output
+
 * `container_check.log`: Log completo
 * `output/report.json`: Output JSON dettagliato
 * `output/report.html`: Report visuale
 * `output/docker-compose.secure.generated.yml`: File sicuro generato
+
+---
+
 ## 🪪 Licenza
+
 Distribuito sotto licenza MIT — vedi `LICENSE`.
+
 ````
 ## 📝 `LICENSE` (MIT)
 ```text
 MIT License
+
 Copyright (c) 2025 ...
+
 Permission is hereby granted, free of charge, to any person obtaining a copy...
 ...
 ````
@@ -911,12 +1001,16 @@ services:
 ## 🔧 `scripts/run_full_analysis.sh`
 ```bash
 #!/bin/bash
+
 echo "[*] Avvio verifica container..."
 bash secure_container_check.sh
+
 echo "[*] Generazione output JSON/HTML..."
 python3 src/reporter.py
+
 echo "[*] Generazione docker-compose sicuro..."
 python3 src/generator.py examples/docker-compose.insecure.yml
+
 echo "[*] Notifica (se abilitata)..."
 python3 src/notifier.py
 ```
@@ -924,6 +1018,7 @@ python3 src/notifier.py
 ```python
 import yaml, sys, os
 from pathlib import Path
+
 def harden_compose(compose_data):
     service = next(iter(compose_data['services'].values()))
     service['user'] = '1000:1000'
@@ -932,6 +1027,7 @@ def harden_compose(compose_data):
     service['tmpfs'] = ['/tmp']
     service['security_opt'] = ['no-new-privileges:true']
     return compose_data
+
 def main(path):
     with open(path, 'r') as f:
         data = yaml.safe_load(f)
@@ -940,6 +1036,7 @@ def main(path):
     with open(out, 'w') as f:
         yaml.dump(hardened, f)
     print(f"[+] File sicuro generato: {out}")
+
 if __name__ == '__main__':
     main(sys.argv[1])
 ```
@@ -947,6 +1044,7 @@ if __name__ == '__main__':
 ```python
 import json, os
 from datetime import datetime
+
 result = {
     "date": str(datetime.now()),
     "risk_score": 6,
@@ -957,8 +1055,10 @@ result = {
         "uid_remap": False
     }
 }
+
 with open("output/report.json", "w") as f:
     json.dump(result, f, indent=2)
+
 # HTML via Jinja2 (esempio semplificato omesso)
 ```
 ## 📡 `src/notifier.py` (Telegram)
@@ -966,11 +1066,14 @@ with open("output/report.json", "w") as f:
 import os, requests
 from dotenv import load_dotenv
 load_dotenv()
+
 TOKEN = os.getenv("TELEGRAM_TOKEN")
 CHAT_ID = os.getenv("TELEGRAM_CHAT_ID")
+
 def notify(msg):
     url = f"https://api.telegram.org/bot{TOKEN}/sendMessage"
     requests.post(url, json={"chat_id": CHAT_ID, "text": msg})
+
 if __name__ == '__main__':
     notify("⚠️ Rischio sicurezza container: livello MEDIO")
 ```
@@ -978,6 +1081,7 @@ if __name__ == '__main__':
 ```python
 import yaml
 from src import generator
+
 def test_user_added():
     with open("examples/docker-compose.insecure.yml") as f:
         data = yaml.safe_load(f)
@@ -987,44 +1091,42 @@ def test_user_added():
 ## 📄 `docs/SECURITY_GUIDELINES.md` (estratto)
 ```markdown
 # 🧰 Best Practices per la Sicurezza dei Container
+
 - 🧍 Esegui sempre i container come utente non-root
 - 🧷 Usa `--cap-drop=ALL` e `--security-opt no-new-privileges:true`
 - 🔒 Evita mount pericolosi come `/var/run/docker.sock`
 - 🧊 Usa filesystem `read-only` e `tmpfs`
 ```
-Se vuoi, posso anche comprimere tutto questo in un archivio `.zip` o fornirti gli script come file scaricabili.
-Fammi sapere se vuoi iniziare a pubblicare questo su GitHub o aggiungere componenti!
 continua qui
-Ecco il progetto **completo e definitivo**, con tutti i file pieni (non estratti), pronto da copiare/incollare in un repository Git. Se vuoi, te lo preparo anche in formato `.zip` o link per scaricarlo.
 ## 🗂 Struttura del progetto
 ```
 secure-container-check/
-├── .gitignore
-├── LICENSE
-├── README.md
-├── requirements.txt
-├── secure_container_check.sh
-├── src/
-│   ├── __init__.py
-│   ├── generator.py
-│   ├── reporter.py
-│   ├── inspector.py
-│   ├── notifier.py
-│   └── utils.py
-├── config/
-│   ├── config.json
-│   └── .env.example
-├── examples/
-│   ├── docker-compose.insecure.yml
-│   └── docker-compose.secure.generated.yml
-├── scripts/
-│   └── run_full_analysis.sh
-├── tests/
-│   ├── __init__.py
-│   ├── test_generator.py
-│   └── test_reporter.py
-└── docs/
-    └── SECURITY_GUIDELINES.md
+*-- .gitignore
+*-- LICENSE
+*-- README.md
+*-- requirements.txt
+*-- secure_container_check.sh
+*-- src/
+    *-- __init__.py
+    *-- generator.py
+    *-- reporter.py
+    *-- inspector.py
+    *-- notifier.py
+    └-- utils.py
+*-- config/
+    *-- config.json
+    └-- .env.example
+*-- examples/
+    *-- docker-compose.insecure.yml
+    └-- docker-compose.secure.generated.yml
+*-- scripts/
+    └-- run_full_analysis.sh
+*-- tests/
+    *-- __init__.py
+    *-- test_generator.py
+    └-- test_reporter.py
+└-- docs/
+    └-- SECURITY_GUIDELINES.md
 ```
 ## 📄 Contenuto completo dei file
 ### `.gitignore`
@@ -1033,33 +1135,41 @@ secure-container-check/
 __pycache__/
 *.py[cod]
 *$py.class
+
 # Env files
 .env
 .env.local
 .env.*.local
+
 # Logs and outputs
 *.log
 output/
 *.html
 *.json
+
 # IDEs
 .vscode/
 .idea/
+
 # Others
 *.swp
 ```
 ### `LICENSE`
 ```text
 MIT License
+
 Copyright (c) 2025
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights 
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell 
 copies of the Software, and to permit persons to whom the Software is 
 furnished to do so, subject to the following conditions:
+
 The above copyright notice and this permission notice shall be included in 
 all copies or substantial portions of the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR 
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY, 
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE 
@@ -1071,27 +1181,45 @@ DEALINGS IN THE SOFTWARE.
 ### `README.md`
 ````markdown
 # Secure Container Check
+
 Un toolkit completo per analizzare e rafforzare la sicurezza dei container Docker, pensato per sviluppatori, DevOps e chiunque voglia automatizzare verifiche, report e correzioni.
+
+---
+
 ## 🎯 Obiettivi del progetto
+
 - Eseguire controlli di sicurezza su container, rilevando configurazioni rischiose  
 - Generare automaticamente un comando `docker run` e un file `docker-compose.yml` “sicuri” basati sulle verifiche e su configurazioni esistenti  
 - Fornire report in formati JSON e HTML per integrazione con pipeline CI/CD  
 - Integrare `docker inspect` per analizzare container in esecuzione  
 - Inviare notifiche (Telegram o email) se la situazione è ad alto rischio
+
+---
+
 ## 📜 Contesto e finalità
+
 Molti container vengono eseguiti con privilegi e montaggi troppo permissivi, o senza meccanismi di isolamento adeguati. Questo strumento aiuta a identificare queste debolezze e a proporre (o generare) configurazioni migliori. È utile per:
+
 - Ambienti di sviluppo personali  
 - Sistemi CI/CD automatizzati  
 - Audit periodici su server di produzione  
 - Sicurezza DevOps / Team di infrastrutture
+
+---
+
 ## ⚙️ Tecnologie utilizzate
+
 - **Bash**: per il controllo rapido del container  
 - **Python 3.x**: per moduli più avanzati (generazione, reportistica, notifica)  
 - **PyYAML**, **Jinja2**, **python-dotenv**, **requests**  
 - **Docker** (comando `docker inspect` integrato)  
 - **Telegram Bot API** (facoltativa) per notifiche  
 - **HTML / JSON** per output leggibili e integrabili
+
+---
+
 ## 🛠 Installazione
+
 ```bash
 git clone https://github.com/tuo-utente/secure-container-check.git
 cd secure-container-check
@@ -1099,23 +1227,37 @@ python3 -m venv venv
 source venv/bin/activate
 pip install -r requirements.txt
 ````
+
+---
+
 ## ▶️ Uso
+
 ### 1. Solo audit (Bash)
+
 ```bash
 bash secure_container_check.sh
 # Genererà log in container_check.log
 ```
+
 ### 2. Analisi completa + generazione + notifiche
+
 ```bash
 bash scripts/run_full_analysis.sh
 ```
+
 ### 3. Generazione “sicura” da un docker-compose esistente
+
 ```bash
 python3 src/generator.py examples/docker-compose.insecure.yml \
     -o examples/docker-compose.secure.generated.yml
 ```
+
+---
+
 ## ⚙ Configurazione notifiche
+
 Copia `.env.example` in `.env` e imposta:
+
 ```
 TELEGRAM_TOKEN=il_tuo_token
 TELEGRAM_CHAT_ID=tuo_chat_id
@@ -1126,19 +1268,36 @@ EMAIL_PASS=segreta
 ENABLE_EMAIL=false
 ENABLE_TELEGRAM=true
 ```
+
+---
+
 ## 📂 Output generati
+
 * `container_check.log` — log dettagliato
 * `output/report.json` — report strutturato
 * `output/report.html` — report leggibile in HTML
 * `examples/docker-compose.secure.generated.yml` — versione “sicura” del compose
+
+---
+
 ## 🧪 Testing
+
 ```bash
 pytest tests
 ```
+
+---
+
 ## 🛡 Linee guida di sicurezza
+
 Vedi `docs/SECURITY_GUIDELINES.md` per le best practice consigliate.
+
+---
+
 ## 📄 Licenza
+
 Distribuito sotto **Licenza MIT**. Vedi `LICENSE` per i dettagli.
+
 ````
 ### `requirements.txt`
 ```text
@@ -1150,19 +1309,25 @@ requests>=2.0
 ### `secure_container_check.sh`
 ```bash
 #!/bin/bash
+
 # ==================================================
 # Secure Container Check (vers. avanzata)
 # Script Bash per audit rapido del container
 # ==================================================
+
 LOGFILE="container_check.log"
 # Redireziona stdout e stderr anche su file log
 exec > >(tee -a "$LOGFILE") 2>&1
+
 echo "================================"
 echo " Secure Container Check"
 echo " Data: $(date)"
 echo "================================"
+
 risk_score=0
+
 # Funzioni modulari
+
 check_container_env() {
     echo -e "\n[1] Verifica ambiente container..."
     if grep -qaE 'docker|lxc' /proc/1/cgroup || [ -f /.dockerenv ]; then
@@ -1172,6 +1337,7 @@ check_container_env() {
         ((risk_score+=2))
     fi
 }
+
 check_user() {
     echo -e "\n[2] Verifica utente attuale..."
     uid=$(id -u)
@@ -1182,6 +1348,7 @@ check_user() {
         echo "✅ Utente non-root: $(whoami)"
     fi
 }
+
 check_uid_map() {
     echo -e "\n[3] Controllo UID remap..."
     map=$(cat /proc/self/uid_map)
@@ -1193,6 +1360,7 @@ check_uid_map() {
         echo "✅ UID remappato"
     fi
 }
+
 check_mounts() {
     echo -e "\n[4] Verifica mount sensibili..."
     mounts=$(mount | grep -E '/etc/(hostname|hosts|resolv.conf)|/workspace|/config')
@@ -1204,6 +1372,7 @@ check_mounts() {
         echo "✅ Nessun mount sensibile rilevato"
     fi
 }
+
 check_docker_socket() {
     echo -e "\n[5] Verifica Docker socket..."
     if [ -S /var/run/docker.sock ]; then
@@ -1213,6 +1382,7 @@ check_docker_socket() {
         echo "✅ Docker socket non accessibile"
     fi
 }
+
 check_docker_cmd() {
     echo -e "\n[6] Verifica comando docker..."
     if command -v docker &>/dev/null; then
@@ -1222,6 +1392,7 @@ check_docker_cmd() {
         echo "✅ 'docker' non trovato"
     fi
 }
+
 check_capabilities() {
     echo -e "\n[7] Verifica capabilities con capsh..."
     if command -v capsh &>/dev/null; then
@@ -1230,6 +1401,7 @@ check_capabilities() {
         echo "ℹ️  capsh non disponibile"
     fi
 }
+
 check_seccomp_apparmor() {
     echo -e "\n[8] Verifica Seccomp e AppArmor..."
     if grep -q Seccomp /proc/1/status; then
@@ -1242,6 +1414,7 @@ check_seccomp_apparmor() {
     else
         echo "⚠️  Seccomp non rilevabile"
     fi
+
     if [ -f /proc/1/attr/current ]; then
         aa=$(cat /proc/1/attr/current)
         if [ "$aa" = "unconfined" ]; then
@@ -1254,6 +1427,7 @@ check_seccomp_apparmor() {
         echo "⚠️  AppArmor non applicabile"
     fi
 }
+
 check_lsblk() {
     echo -e "\n[9] Verifica lsblk..."
     if command -v lsblk &>/dev/null; then
@@ -1269,10 +1443,12 @@ check_lsblk() {
         echo "ℹ️  lsblk non presente"
     fi
 }
+
 check_root_process() {
     echo -e "\n[10] Processi root attivi..."
     ps -U root -u root u | head -n 10
 }
+
 print_suggestions() {
     echo -e "\n=============================="
     echo "📌 Suggerimenti di hardening"
@@ -1287,6 +1463,7 @@ print_suggestions() {
     echo "  --read-only"
     echo "  --tmpfs /tmp"
 }
+
 final_assessment() {
     echo -e "\n=============================="
     echo "📊 Valutazione finale"
@@ -1300,6 +1477,7 @@ final_assessment() {
     fi
     echo "Log salvato in: $LOGFILE"
 }
+
 # --- Ordine di esecuzione ---
 check_container_env
 check_user
@@ -1325,16 +1503,20 @@ import os
 import json
 from pathlib import Path
 from datetime import datetime
+
 def ensure_output_dir():
     out = Path("output")
     out.mkdir(exist_ok=True)
     return out
+
 def load_config(config_path="config/config.json"):
     with open(config_path, "r") as f:
         return json.load(f)
+
 def write_json(data, filename):
     with open(filename, "w") as f:
         json.dump(data, f, indent=2)
+
 def write_text(data, filename):
     with open(filename, "w") as f:
         f.write(data)
@@ -1343,6 +1525,7 @@ def write_text(data, filename):
 ```python
 import subprocess
 import json
+
 def inspect_container(container_name_or_id):
     """Esegue docker inspect e restituisce il risultato come dict."""
     try:
@@ -1359,6 +1542,7 @@ import yaml
 import argparse
 from pathlib import Path
 from .utils import ensure_output_dir
+
 def harden_service_cfg(svc_def: dict):
     """Applica le regole di hardening a una singola definizione di servizio."""
     # imposta utente non-root se non già presente
@@ -1372,20 +1556,26 @@ def harden_service_cfg(svc_def: dict):
     # security options
     svc_def["security_opt"] = svc_def.get("security_opt", []) + ["no-new-privileges:true"]
     return svc_def
+
 def generate_secure_compose(src_path: str, dest_path: str = None):
     """Legge un docker-compose YAML, applica hardening e scrive un nuovo file."""
     with open(src_path, "r") as f:
         doc = yaml.safe_load(f)
+
     services = doc.get("services", {})
     for name, svc in services.items():
         services[name] = harden_service_cfg(svc)
+
     doc["services"] = services
+
     if dest_path is None:
         dest_path = Path(src_path).parent / (Path(src_path).stem + ".secure.generated.yml")
+
     out_path = Path(dest_path)
     with open(out_path, "w") as f:
         yaml.safe_dump(doc, f)
     return str(out_path)
+
 def generate_secure_run(existing_params: dict):
     """
     Genera un comando `docker run` sicuro a partire da parametri esistenti.
@@ -1415,6 +1605,7 @@ def generate_secure_run(existing_params: dict):
     if "command" in existing_params:
         cmd.append(existing_params["command"])
     return " ".join(cmd)
+
 def main():
     parser = argparse.ArgumentParser(
         description="Genera un docker-compose o comando docker run sicuro"
@@ -1422,8 +1613,10 @@ def main():
     parser.add_argument("input", help="Docker Compose YAML di input")
     parser.add_argument("-o", "--output", help="Path di output del file generato")
     args = parser.parse_args()
+
     dest = generate_secure_compose(args.input, args.output)
     print(f"[generator] Compose sicuro generato: {dest}")
+
 if __name__ == "__main__":
     main()
 ```
@@ -1433,6 +1626,7 @@ import json
 from jinja2 import Environment, FileSystemLoader
 from .utils import ensure_output_dir, write_json
 from datetime import datetime
+
 TEMPLATE_HTML = """
 <!DOCTYPE html>
 <html lang="it">
@@ -1459,9 +1653,11 @@ TEMPLATE_HTML = """
 </body>
 </html>
 """
+
 def load_json_report(path="output/report.json"):
     with open(path, "r") as f:
         return json.load(f)
+
 def generate_html_report(json_report: dict, out_path: str = None):
     env = Environment(loader=FileSystemLoader("."))
     tpl = env.from_string(TEMPLATE_HTML)
@@ -1473,11 +1669,13 @@ def generate_html_report(json_report: dict, out_path: str = None):
     with open(out_path, "w") as f:
         f.write(html)
     return out_path
+
 def main():
     ensure_output_dir()
     report = load_json_report()
     html_path = generate_html_report(report)
     print(f"[reporter] HTML report generato: {html_path}")
+
 if __name__ == "__main__":
     main()
 ```
@@ -1490,7 +1688,9 @@ from email.message import EmailMessage
 import requests
 from dotenv import load_dotenv
 from .utils import load_config
+
 load_dotenv()
+
 def send_telegram(msg: str):
     token = os.getenv("TELEGRAM_TOKEN")
     chat_id = os.getenv("TELEGRAM_CHAT_ID")
@@ -1505,6 +1705,7 @@ def send_telegram(msg: str):
             print(f"[notifier] Telegram error: {resp.status_code} — {resp.text}")
     except Exception as e:
         print(f"[notifier] Errore invio Telegram: {e}")
+
 def send_email(msg: str):
     host = os.getenv("EMAIL_HOST")
     port = int(os.getenv("EMAIL_PORT", "587"))
@@ -1526,6 +1727,7 @@ def send_email(msg: str):
             server.send_message(email)
     except Exception as e:
         print(f"[notifier] Errore invio email: {e}")
+
 def main():
     config = load_config()
     rpt = {}
@@ -1535,6 +1737,7 @@ def main():
     except FileNotFoundError:
         print("[notifier] report.json non trovato")
         return
+
     score = rpt.get("risk_score", 0)
     threshold = config.get("risk_threshold", 5)
     if score >= threshold:
@@ -1564,12 +1767,14 @@ def main():
 # Telegram
 TELEGRAM_TOKEN=
 TELEGRAM_CHAT_ID=
+
 # Email (opzionale)
 EMAIL_HOST=
 EMAIL_PORT=
 EMAIL_USER=
 EMAIL_PASS=
 EMAIL_TO=
+
 # Altri parametri
 ```
 ### `examples/docker-compose.insecure.yml`
@@ -1608,12 +1813,16 @@ services:
 ```bash
 #!/bin/bash
 set -e
+
 echo "[*] Esecuzione audit container (Bash)..."
 bash secure_container_check.sh
+
 echo "[*] Generazione report JSON e HTML..."
 python3 src/reporter.py
+
 echo "[*] Generazione docker-compose sicuro (se abilitato)..."
 python3 src/generator.py examples/docker-compose.insecure.yml
+
 echo "[*] Invio notifiche (se rischio alto)..."
 python3 src/notifier.py
 ```
@@ -1625,6 +1834,7 @@ python3 src/notifier.py
 ```python
 import yaml
 from src.generator import harden_service_cfg, generate_secure_compose
+
 def test_harden_service_cfg_defaults():
     svc = {}
     hardened = harden_service_cfg(svc)
@@ -1633,6 +1843,7 @@ def test_harden_service_cfg_defaults():
     assert "ALL" in hardened["cap_drop"]
     assert "/tmp" in hardened["tmpfs"]
     assert "no-new-privileges:true" in hardened["security_opt"]
+
 def test_generate_secure_compose(tmp_path):
     # crea file compose temporaneo
     data = {
@@ -1661,6 +1872,7 @@ import json
 import os
 from src.reporter import generate_html_report, load_json_report
 from src.utils import ensure_output_dir
+
 def test_report_html(tmp_path):
     sample = {
         "date": "2025-01-01",
@@ -1684,31 +1896,68 @@ def test_report_html(tmp_path):
 ### `docs/SECURITY_GUIDELINES.md`
 ```markdown
 # Linee guida per l’hardening dei container
+
 Questa guida raccoglie best practice per eseguire container con maggiore sicurezza:
+
+---
+
 ## 🔐 Esegui con utente non-root
+
 Non eseguire il container come root se non strettamente necessario. Usa opzioni come `--user 1000:1000` o `runAsNonRoot` in Kubernetes.
+
+---
+
 ## 🧷 Droppa capability inutili
+
 Usa `--cap-drop=ALL` e aggiungi solo quelle indispensabili. Non concedere `SYS_ADMIN`, `SETUID`, ecc., se non richieste.
+
+---
+
 ## 🚫 Evita mount pericolosi
+
 Non montare:
 - `/var/run/docker.sock`
 - `/etc/hostname`, `/etc/hosts`, `/etc/resolv.conf` direttamente
 - Directory host sensitive senza motivazione
+
+---
+
 ## 📚 Filesystem in sola lettura
+
 Imposta `--read-only` e monta come `tmpfs` solo ciò che serve (es. `/tmp`).
+
+---
+
 ## 🛡 no_new_privileges, seccomp, AppArmor/SELinux
+
 - Usa `--security-opt no-new-privileges:true`
 - Applica profilo **seccomp** restrittivo
 - Usa profili AppArmor o SELinux per confinare il container
+
+---
+
 ## 📦 Namespace utente (user namespaces remap)
+
 Attiva `userns-remap` nel demone Docker per isolare l’UID 0 del container da quello dell’host.
+
+---
+
 ## 📈 Monitoraggio e aggiornamenti
+
 - Aggiorna regolarmente kernel, Docker, runtime (runc, containerd)
 - Tieni traccia di CVE legati ai componenti
 - Automatizza audit regolari
+
+---
+
 ## 📢 Notifiche e alerting
+
 Integra alerting (Telegram, email) per segnalare condizioni di rischio elevato a team o operatori.
+
+---
+
 ## 🔄 Automatizzazione
+
 Utilizza script come questo per generare automaticamente configurazioni sicure e report leggibili, integrabili in pipeline di CI/CD.
 ```
 ## ✅ Spunti di miglioramento futuri
@@ -1718,10 +1967,8 @@ Utilizza script come questo per generare automaticamente configurazioni sicure e
 * Plugin per integrazione con GitHub Actions / GitLab CI
 * Algoritmi di valutazione più sofisticata, con pesi configurabili
 * Backup e rollback automatico delle configurazioni generate
-Se vuoi, posso prepararti anche un **repository GitHub già inizializzato**, con commit iniziali, README pronto e struttura già caricabile — così puoi clonarlo direttamente. Vuoi che lo faccia?
 no, torniamo al pratico: Vorrei capire se è possibile davvero uscire dal mio container di vscodium-server.
 proviamo, sono nel terminale dell'interfaccia web.
-Perfetto. Sei nel terminale web di un container basato su `vscodium-server`, e vuoi capire **se sia possibile "uscire" dal container**, cioè accedere all'host o superare i limiti dell'isolamento del container. Procediamo con un'analisi pratica e guidata.
 ## 🧭 Obiettivo
 Verificare se dal container:
 * puoi **eseguire comandi sull’host** (privilegi di root sull'host)
@@ -1733,19 +1980,26 @@ Copia e incolla questi comandi nel terminale web del container:
 ```bash
 # 1. Chi sei?
 id
+
 # 2. Dove sei?
 pwd && hostname && uname -a
+
 # 3. Sei dentro un container?
 grep -qaE 'docker|lxc' /proc/1/cgroup && echo "✓ Sei in un container" || echo "✗ Non sembra un container"
 [ -f /.dockerenv ] && echo "✓ /.dockerenv presente" || echo "✗ /.dockerenv mancante"
+
 # 4. Verifica se hai accesso al Docker socket
 ls -la /var/run/docker.sock
+
 # 5. Prova ad accedere al demone Docker (rischioso)
 docker ps
+
 # 6. Hai lsblk? Mostra i dischi host
 which lsblk && lsblk || echo "lsblk non disponibile"
+
 # 7. Mount attuali
 mount | grep -v "overlay"
+
 # 8. Root mapping
 cat /proc/self/uid_map
 ```
@@ -1802,13 +2056,13 @@ bash: docker: command not found
 /usr/bin/lsblk
 NAME    MAJ:MIN RM   SIZE RO TYPE MOUNTPOINTS
 vda     254:0    0   160G  0 disk 
-├─vda1  254:1    0 159.9G  0 part /etc/hosts
-│                                 /etc/hostname
-│                                 /etc/resolv.conf
-│                                 /workspace
-│                                 /config
-├─vda14 254:14   0     3M  0 part 
-└─vda15 254:15   0   124M  0 part 
+*-vda1  254:1    0 159.9G  0 part /etc/hosts
+                                  /etc/hostname
+                                  /etc/resolv.conf
+                                  /workspace
+                                  /config
+*-vda14 254:14   0     3M  0 part 
+└-vda15 254:15   0   124M  0 part 
 proc on /proc type proc (rw,nosuid,nodev,noexec,relatime)
 tmpfs on /dev type tmpfs (rw,nosuid,size=65536k,mode=755,inode64)
 devpts on /dev/pts type devpts (rw,nosuid,noexec,relatime,gid=5,mode=620,ptmxmode=666)
@@ -1856,7 +2110,6 @@ Non ci sono evidenze che suggeriscano la possibilità di evasione:
 * **Accesso limitato** a partizioni e device (solo la tua workspace)
 ### 🟢 Valutazione complessiva: **Container isolato correttamente**
 ## 🔒 Suggerimenti per aumentare ancora la sicurezza
-Se vuoi blindare ulteriormente il container `vscodium-server`, considera:
 1. **Drop delle capability**
    * Esegui con `--cap-drop=ALL --cap-add=CHOWN --cap-add=SETUID` ecc.
 2. **Filesystem read-only**
@@ -1873,10 +2126,8 @@ Questo può succedere con:
 * Container rootless (es: `podman`)
 * Configurazioni custom del runtime (`containerd`, `runc`)
 ## 🚀 Prossimo passo: vuoi testare una fuga?
-Se vuoi simulare **un'evasione riuscita**, posso fornirti:
 * un container male configurato (`--privileged`, Docker socket montato)
 * oppure una **reverse shell** didattica per capire i rischi
-Fammi sapere!
 allora perchè
 abc@7d57ad7d93ce:~/workspace$ python3 -m http.server 8000 --directory markmap-client
 Serving HTTP on 0.0.0.0 port 8000 (http://0.0.0.0:8000/) ...
@@ -1943,7 +2194,6 @@ Se ti risponde HTML, è attivo correttamente. Ma se:
 * ma **simpleBrowser** no
 👉 allora il problema è di **esposizione delle porte o di rete inter-container**.
 ## 🔧 Se vuoi, ti aiuto a configurare `docker run` o `docker-compose.yml` per rendere accessibile quella porta anche nel browser.
-Fammi sapere come hai avviato `vscodium-server` (manuale, compose, traefik, ecc.) e ti do la configurazione corretta per esporre la porta.
 attuale:
 version: "3.8"
 services:
@@ -1977,7 +2227,6 @@ services:
 networks:
   traefik_network:
     external: true
-Grazie per aver condiviso il tuo `docker-compose.yml`! Ora ti spiego **perché `python3 -m http.server` sulla porta `8000` non è accessibile**, anche se il server è attivo nel container.
 ## 🧠 Diagnosi del problema
 Il tuo container **non espone la porta `8000`**, e **non c'è nessuna regola Traefik** che la inoltri. Attualmente, tutto il traffico passa da Traefik → porta **3000** (la porta interna di `openvscode-server`).
 Quindi, anche se lanci un server su `0.0.0.0:8000` dentro il container, **né Traefik né Docker sanno che dovrebbero renderla accessibile**.
@@ -1994,12 +2243,14 @@ Nel tuo `docker-compose.yml`, aggiungi **altre label** sotto `openvscode-server`
 ```yaml
 labels:
   # (lascia le esistenti)
+
   # ↪️ Nuova rotta per HTTP server custom
   - "traefik.http.routers.markmap.rule=Host(`${TRAEFIK_DOMAIN_NAME}`) && PathPrefix(`/markmap`)"
   - "traefik.http.routers.markmap.entrypoints=websecure"
   - "traefik.http.routers.markmap.tls=true"
   - "traefik.http.routers.markmap.middlewares=strip-markmap@docker"
   - "traefik.http.services.markmap.loadbalancer.server.port=3001"
+
   # Middleware per rimuovere il prefisso /markmap
   - "traefik.http.middlewares.strip-markmap.stripprefix.prefixes=/markmap"
 ```
@@ -2022,7 +2273,6 @@ Accedi da:
 * Oppure da browser interno VS Code con: `http://localhost:8000`
 ❗ **Attenzione**: questa soluzione bypassa Traefik (e le sue protezioni).
 ## 🧪 Test da dentro il container
-Se vuoi testare se il tuo HTTP server funziona **intra-container**, puoi usare:
 ```bash
 curl http://localhost:8000
 ```
@@ -2032,7 +2282,6 @@ Per un sistema sicuro e integrato:
 * ➕ Usa **Opzione 1** (Traefik con path dedicato)
 * 🔐 Proteggi con auth middleware e HTTPS
 * ✨ Aggiungi un alias frontend (es: `/markmap`) senza aprire porte dirette
-Ecco la versione **riscritta, corretta e ben commentata** del tuo `docker-compose.yml`, con:
 * ✔️ Commenti chiari in italiano
 * 🔒 Traefik configurato correttamente per HTTPS
 * 🔁 Aggiunta opzionale: instradamento HTTP server secondario (es. per `markmap`)
@@ -2040,42 +2289,53 @@ Ecco la versione **riscritta, corretta e ben commentata** del tuo `docker-compos
 * 📄 Compatibile con variabili `.env` esterne
 ```yaml
 version: "3.8"
+
 services:
   openvscode-server:
     image: lscr.io/linuxserver/openvscode-server:latest
     container_name: openvscode-server
+
     # 📦 Variabili d'ambiente (meglio definirle in un file .env)
     environment:
       - PUID=${PUID}                     # ID utente del host (per i permessi corretti)
       - PGID=${PGID}                     # ID gruppo del host
       - TZ=${TZ}                         # Timezone (es. Europe/Rome)
       - SUDO_PASSWORD=${SUDO_PASSWORD}  # Password per sudo dentro VSCode
+
     # 🗂️ Volumi montati
     volumes:
       - ./config:/config                 # Configurazioni persistenti (es. estensioni, impostazioni utente)
       - ./workspace:/workspace           # Directory di lavoro dove salvi i progetti
+
     # 📍 Directory di lavoro predefinita nel container
     working_dir: /workspace
+
     # 🔁 Riavvio automatico in caso di crash
     restart: unless-stopped
+
     # 🔀 Etichette per il reverse proxy Traefik
     labels:
       # ✅ Abilita Traefik per questo container
       - "traefik.enable=true"
+
       ### 🌐 ROUTER HTTP (porta 80 → redirect verso HTTPS)
       - "traefik.http.routers.openvscode-http.rule=Host(`${TRAEFIK_DOMAIN_NAME}`)"
       - "traefik.http.routers.openvscode-http.entrypoints=web"
       - "traefik.http.routers.openvscode-http.middlewares=redirect-to-https"
+
       ### 🔒 ROUTER HTTPS (porta 443)
       - "traefik.http.routers.openvscode-https.rule=Host(`${TRAEFIK_DOMAIN_NAME}`)"
       - "traefik.http.routers.openvscode-https.entrypoints=websecure"
       - "traefik.http.routers.openvscode-https.tls=true"
       - "traefik.http.routers.openvscode-https.tls.certresolver=mytlschallenge"
+
       # 🔐 Middleware personalizzate (es. autenticazione & headers — riutilizza quelle di Logseq)
       - "traefik.http.routers.openvscode-https.middlewares=logseq-auth@file,logseq-headers@docker"
+
       # 🔁 Servizio e porta interna su cui ascolta OpenVSCode
       - "traefik.http.services.openvscode.loadbalancer.server.port=3000"
       - "traefik.http.routers.openvscode-https.service=openvscode@docker"
+
       ####################################################
       # (FACOLTATIVO) ROUTER DEDICATO per Markmap o altri
       # Accessibile da: https://<dominio>/markmap
@@ -2085,11 +2345,14 @@ services:
       - "traefik.http.routers.markmap.tls=true"
       - "traefik.http.routers.markmap.middlewares=strip-markmap@docker"
       - "traefik.http.services.markmap.loadbalancer.server.port=3001"
+
       # 🔧 Middleware per rimuovere il prefisso `/markmap` prima di inoltrare
       - "traefik.http.middlewares.strip-markmap.stripprefix.prefixes=/markmap"
+
     # 🌐 Rete condivisa con Traefik
     networks:
       - traefik_network
+
 networks:
   traefik_network:
     external: true
@@ -2117,7 +2380,6 @@ TRAEFIK_DOMAIN_NAME=codium.tuodominio.it
    https://codium.tuodominio.it/markmap
    ```
 ### 💬 Hai anche altre esigenze (es: autenticazione Telegram, output JSON, generazione Compose sicuro)? Posso aiutarti a modularizzare tutto il sistema.
-Fammi sapere se vuoi estendere questa configurazione a un template generale per **analisi di container + sicurezza + automazione**.
 senti... ma secondo te, posso trasformare tutti i miei docker-compose in un playbook ansible fatto a modino, magari automaticamente o con l'aiuto della ai?
 Assolutamente **sì**, e anzi — è **un'ottima idea**.
 Trasformare i tuoi `docker-compose.yml` in un **playbook Ansible** ti consente di:
@@ -2128,7 +2390,6 @@ Trasformare i tuoi `docker-compose.yml` in un **playbook Ansible** ti consente d
 | 🧱 **Infrastructure-as-Code**            | Tracciabile in Git, modificabile, versionabile                                 |
 | 🛡️ **Più sicuro e centralizzato**       | Gestisci `.env`, permessi, reti, volumi, backup... tutto in modo coerente      |
 | 🤖 **Estendibile**                       | Puoi aggiungere alert (es. email, Telegram), monitoraggio, backup, ecc.        |
-| 🧠 **Intelligenza artificiale friendly** | Facilmente generabile, modificabile e scalabile tramite AI (es. me 😊)         |
 ### 📦 Cosa fa Ansible in questo contesto?
 Con un playbook, puoi:
 * Installare Docker e Docker Compose (se mancano)
@@ -2148,14 +2409,17 @@ Scrivi un playbook come questo:
 - name: Deploy openvscode-server
   hosts: myservers
   become: true
+
   vars_files:
     - ../env/codium.env.yml
+
   tasks:
     - name: Clona repo con docker-compose.yml
       git:
         repo: https://github.com/tuo/repo.git
         dest: /opt/openvscode
         update: yes
+
     - name: Copia file .env personalizzato
       copy:
         src: ../env/codium.env
@@ -2163,6 +2427,7 @@ Scrivi un playbook come questo:
         owner: root
         group: root
         mode: '0600'
+
     - name: Avvia lo stack con Docker Compose
       community.docker.docker_compose:
         project_src: /opt/openvscode
@@ -2181,14 +2446,13 @@ Mi puoi fornire:
 * Policy di sicurezza (porte aperte, autenticazione, ecc.)
 E io ti restituisco un progetto completo:
 📁 `ansible/`
-├── `inventories/`
-├── `playbooks/`
-├── `roles/` (es: `openvscode`, `traefik`, `portainer`, ecc.)
-├── `group_vars/`
-├── `env/`
-└── `README.md`
+*-- `inventories/`
+*-- `playbooks/`
+*-- `roles/` (es: `openvscode`, `traefik`, `portainer`, ecc.)
+*-- `group_vars/`
+*-- `env/`
+└-- `README.md`
 ### 📦 Vuoi un esempio pratico ora?
-Se vuoi, **condividi un tuo `docker-compose.yml` (anche solo un servizio)** e io ti genero:
 * Il ruolo Ansible
 * Il playbook che lo usa
 * File `.env` e variabili Ansible
@@ -2227,15 +2491,15 @@ Qui sotto ti spiego **come fornire tutto**, **in che formato** e **con che strum
 **Formato consigliato da fornire:**
 ```
 compose-files/
-├── openvscode/
-│   ├── docker-compose.yml
-│   └── .env
-├── traefik/
-│   ├── docker-compose.yml
-│   └── traefik.yml
-│   └── dynamic_conf/
-├── portainer/
-│   └── docker-compose.yml
+*-- openvscode/
+    *-- docker-compose.yml
+    └-- .env
+*-- traefik/
+    *-- docker-compose.yml
+    └-- traefik.yml
+    └-- dynamic_conf/
+*-- portainer/
+    └-- docker-compose.yml
 ```
 🟢 *Suggerimento*: ZIP di `compose-files/` o upload diretto (oppure copia/incolla nei messaggi).
 ### ✅ 2. **Struttura dei server (inventario Ansible)**
@@ -2275,10 +2539,12 @@ firewall:
     - 443       # HTTPS
     - 9000      # Portainer
   deny_all_other: true
+
 users:
   - name: admin
     ssh_key: "ssh-rsa AAAAB3..."
     sudo: true
+
 traefik:
   domain: codium.miodominio.it
   certresolver: mytlschallenge
@@ -2297,7 +2563,6 @@ traefik:
 | Esportare chiavi SSH       | `cat ~/.ssh/authorized_keys`       |                                      |
 | Elenco immagini/volumi     | `docker ps -a`, `docker volume ls` |                                      |
 ## 🧩 TEMPLATE COMPILABILE (pronto all’uso)
-Ecco un esempio completo da compilare:
 ```yaml
 # 📦 VPS Info
 hostname: vps1
@@ -2305,15 +2570,18 @@ ip: 192.0.2.1
 ssh_user: root
 ssh_port: 22
 dns_name: codium.example.com
+
 # 🔐 Sicurezza
 firewall:
   allow_ports: [22, 80, 443, 9000]
   deny_all_other: true
+
 users:
   - name: admin
     sudo: true
     ssh_key: |
       ssh-rsa AAAAB3NzaC1yc2EAAAADAQABAAABAQC...
+
 # 🚀 Servizi da deployare
 compose_services:
   - name: openvscode
@@ -2322,6 +2590,7 @@ compose_services:
     path: ./compose-files/traefik/docker-compose.yml
   - name: portainer
     path: ./compose-files/portainer/docker-compose.yml
+
 # 🌐 Traefik config
 traefik:
   enable_https: true
@@ -2409,7 +2678,6 @@ Ma:
 * Si può fare **con AI e script semiautomatici**
 * Puoi costruirti un flusso **personalizzato**, oggi stesso (posso aiutarti passo-passo)
 ## ✅ Vuoi che ti costruisca un prototipo?
-Se vuoi, posso creare:
 * Uno script (`discover.sh`)
 * Un convertitore AI che analizza la struttura di `docker-compose` e `docker inspect`
 * Un progetto base Ansible generato automaticamente
@@ -2417,12 +2685,12 @@ Tu devi solo:
 1. Eseguire lo script sul VPS
 2. Mandarmi gli output (o usarli localmente)
 3. Io (o tu con me) generiamo un progetto pronto al deploy
-Fammi sapere come vuoi procedere 💻🔥
 possiamo scriverlo noi usando le api di gemini, no?
 Sì, assolutamente: **possiamo scriverlo noi**, e usare **Gemini (o GPT)** come *motore AI* per analizzare, trasformare e generare i playbook Ansible — a partire dai dati raccolti dal tuo VPS o dai tuoi progetti `docker-compose`.
 Questa è un’idea **fattibile, potente e scalabile**.
 ## 🧠 In breve: cosa andremmo a costruire?
 Un progetto chiamato, ad esempio:
+>
 ## 🔧 Tecnologie da usare
 | Componente        | Tool consigliato                   |
 | ----------------- | ---------------------------------- |
@@ -2435,23 +2703,23 @@ Un progetto chiamato, ad esempio:
 ## 📁 Struttura del progetto
 ```
 autoplaybook-ai/
-├── cli/                            # CLI tool per discovery
-│   └── discover.sh                 # Shell script per raccolta dati
-│   └── gather.py                   # Parser in Python
-├── prompts/                        # Prompt per AI
-│   └── generate_roles.txt
-│   └── generate_inventory.txt
-├── ai/
-│   └── call_gemini.py              # Wrapper per le API Gemini
-├── output/
-│   └── [generated_ansible_project]/
-├── config/
-│   └── settings.yaml
-├── examples/
-│   └── sample_inventory.yml
-├── README.md
-├── main.py                         # Entrypoint: orchestri tutto
-└── requirements.txt
+*-- cli/                            # CLI tool per discovery
+    └-- discover.sh                 # Shell script per raccolta dati
+    └-- gather.py                   # Parser in Python
+*-- prompts/                        # Prompt per AI
+    └-- generate_roles.txt
+    └-- generate_inventory.txt
+*-- ai/
+    └-- call_gemini.py              # Wrapper per le API Gemini
+*-- output/
+    └-- [generated_ansible_project]/
+*-- config/
+    └-- settings.yaml
+*-- examples/
+    └-- sample_inventory.yml
+*-- README.md
+*-- main.py                         # Entrypoint: orchestri tutto
+└-- requirements.txt
 ```
 ## 🎯 Esempio di funzionamento
 ### 1. Esegui la CLI:
@@ -2474,6 +2742,7 @@ python main.py --discover --host 192.168.1.100 --user root
 Esempio base in Python:
 ```python
 from google.generativeai import GenerativeModel
+
 model = GenerativeModel('gemini-pro')
 response = model.generate_content(
     prompt_text,
@@ -2501,13 +2770,11 @@ Posso creare per te un **MVP minimale**:
 * Python 3.10+
 ## 🚀 Conclusione
 **Sì, possiamo farlo noi.** Non solo è possibile — è anche **un progetto altamente utile e originale**.
-Fammi sapere se vuoi partire con:
 * 👣 Un MVP base
 * 🔬 Un prototipo più completo
 * 🎓 Oppure vuoi imparare a costruirlo con me step by step
 Pronto quando vuoi 💻
 Un prototipo più completo che usa la apikey di gemini
-Genera un progetto completo e coeso basato sull'intero contenuto di questa chat. Il risultato deve essere un unico output esaustivo che includa tutti i componenti necessari come se fosse un repository Git pronto per la pubblicazione. Il progetto deve contenere:
 1. Una descrizione chiara e dettagliata nel file `README.md`, comprensiva di:
    * Obiettivi del progetto
    * Contesto e finalità
@@ -2525,49 +2792,55 @@ Genera un progetto completo e coeso basato sull'intero contenuto di questa chat.
 5. Un file `.gitignore` coerente con il progetto
 6. Licenza del progetto (`LICENSE`), preferibilmente una licenza open-source
 L’output deve essere completo, dettagliato e pronto per essere copiato/incollato come base per un vero repository su GitHub. Assicurati di non tralasciare nulla e di integrare tutte le informazioni discusse in chat in modo organico.
-Ecco un progetto completo, strutturato come un repository Git pronto per pubblicazione, che realizza un sistema automatizzato per estrarre configurazioni Docker Compose e server VPS, interfacciarsi con l’API Gemini (o GPT-like) per generare playbook Ansible sicuri, con funzioni di output multipli e notifiche.
 # 📁 Struttura cartelle e file del progetto
 ```
 auto-ansible-playbook/
-├── README.md
-├── LICENSE
-├── .gitignore
-├── requirements.txt
-├── .env.example
-├── config.json
-├── docker-compose.yml
-├── src/
-│   ├── __init__.py
-│   ├── discover.py             # Script per estrazione dati server e docker-compose
-│   ├── gemini_client.py       # Client API Gemini/OpenAI
-│   ├── ansible_generator.py   # Modulo generazione playbook Ansible da input JSON
-│   ├── notifier.py            # Modulo notifiche (Telegram, email)
-│   ├── utils.py               # Funzioni di utilità comuni
-│   └── main.py                # Orchestratore generale
-├── examples/
-│   ├── sample_docker_compose.yml
-│   ├── sample_config.json
-│   └── generated_playbook.yml
-├── tests/
-│   ├── test_discover.py
-│   ├── test_gemini_client.py
-│   ├── test_ansible_generator.py
-│   └── test_notifier.py
-└── scripts/
-    └── run_discovery.sh       # Script bash per lanciare discovery da VPS
+*-- README.md
+*-- LICENSE
+*-- .gitignore
+*-- requirements.txt
+*-- .env.example
+*-- config.json
+*-- docker-compose.yml
+*-- src/
+    *-- __init__.py
+    *-- discover.py             # Script per estrazione dati server e docker-compose
+    *-- gemini_client.py       # Client API Gemini/OpenAI
+    *-- ansible_generator.py   # Modulo generazione playbook Ansible da input JSON
+    *-- notifier.py            # Modulo notifiche (Telegram, email)
+    *-- utils.py               # Funzioni di utilità comuni
+    └-- main.py                # Orchestratore generale
+*-- examples/
+    *-- sample_docker_compose.yml
+    *-- sample_config.json
+    └-- generated_playbook.yml
+*-- tests/
+    *-- test_discover.py
+    *-- test_gemini_client.py
+    *-- test_ansible_generator.py
+    └-- test_notifier.py
+└-- scripts/
+    └-- run_discovery.sh       # Script bash per lanciare discovery da VPS
 ```
 # 📄 README.md
 ````markdown
 # Auto Ansible Playbook Generator
+
 ## Obiettivi del progetto
+
 Questo progetto automatizza la generazione di playbook Ansible partendo dalle configurazioni esistenti di container Docker (docker-compose.yml), la struttura dei server VPS e le policy di sicurezza. Utilizza l'API Gemini (o GPT-like) per analizzare e trasformare queste informazioni in configurazioni Ansible sicure e ottimizzate.
+
 ## Contesto e finalità
+
 Molti amministratori e sviluppatori gestiscono server e container con configurazioni sparse e senza una documentazione uniforme. Questo tool consente di raccogliere automaticamente queste configurazioni, analizzarle e generare playbook Ansible che possono essere usati per:
+
 - Ricreare l'ambiente in modo sicuro e coerente
 - Audit di sicurezza automatici
 - Automatizzare la gestione della configurazione e deployment
 - Integrazione CI/CD con output JSON e notifiche in caso di anomalie
+
 ## Funzionalità principali
+
 - Scansione automatica di docker-compose.yml, configurazioni VPS (IP, utenti, SSH, DNS)
 - Analisi e trasformazione tramite API Gemini/OpenAI
 - Generazione playbook Ansible modulari e sicuri
@@ -2575,7 +2848,9 @@ Molti amministratori e sviluppatori gestiscono server e container con configuraz
 - Esportazione report HTML
 - Notifiche Telegram o email su rischi o errori
 - Modularità per aggiunta di nuovi moduli e provider API
+
 ## Tecnologie utilizzate
+
 - Python 3.9+
 - Docker e Docker Compose
 - Ansible
@@ -2583,72 +2858,117 @@ Molti amministratori e sviluppatori gestiscono server e container con configuraz
 - Bash scripting
 - Traefik (per esempio di reverse proxy)
 - Telegram API / SMTP (per notifiche)
+
+---
+
 ## Installazione
+
 1. Clona il repository:
    ```bash
    git clone https://github.com/tuonome/auto-ansible-playbook.git
    cd auto-ansible-playbook
 ````
+
 2. Crea un virtual environment e installa le dipendenze:
+
    ```bash
    python3 -m venv .venv
    source .venv/bin/activate
    pip install -r requirements.txt
    ```
+
 3. Configura `.env` copiando `.env.example` e impostando le tue variabili:
+
    ```bash
    cp .env.example .env
    # Modifica con la tua API key Gemini, token Telegram, email, ecc.
    ```
+
 4. Personalizza `config.json` con le informazioni dei tuoi server VPS e configurazioni
+
+---
+
 ## Uso
+
 ### Scansione e generazione playbook
+
 ```bash
 python src/main.py --scan --generate
 ```
+
 Questo comando:
+
 * esegue la scansione del server e dei docker-compose specificati
 * chiama l'API Gemini per analisi e trasformazione
 * genera un playbook Ansible `output/playbook.yml`
 * esporta report HTML e JSON in `output/`
 * invia notifiche se abilitato
+
 ### Parametri principali
+
 * `--scan`: avvia scansione automatica
 * `--generate`: genera playbook da dati raccolti
 * `--notify`: invia notifiche in caso di alert
+
 ### Esempio di output
+
 * `output/playbook.yml`: playbook Ansible generato
 * `output/report.html`: report dettagliato
 * `output/report.json`: dati strutturati per CI/CD
+
+---
+
 ## Struttura file e cartelle
+
 * `src/`: codice sorgente Python modulare
 * `examples/`: esempi di input/output
 * `tests/`: test unitari e di integrazione
 * `scripts/`: script bash di supporto
+
+---
+
 ## Sviluppo e testing
+
 * Usa `pytest` per eseguire i test:
+
   ```bash
   pytest tests/
   ```
+
 * Aggiungi nuove funzionalità modulari in `src/`
+
+---
+
 ## Licenza
+
 Questo progetto è rilasciato sotto licenza MIT. Vedi `LICENSE` per dettagli.
+
+---
+
 ## Contatti
+
 Autore: Tuo Nome - [tuo.email@example.com](mailto:tuo.email@example.com)
+
+---
+
 ````
 # ⚙️ .env.example
 ```dotenv
 # API key per Gemini / OpenAI
 GEMINI_API_KEY="tuo_api_key_gemini"
+
 # Telegram bot token per notifiche (opzionale)
 TELEGRAM_BOT_TOKEN=""
+
 # Telegram chat ID (opzionale)
 TELEGRAM_CHAT_ID=""
+
 # SMTP email (opzionale)
 SMTP_SERVER=""
 SMTP_PORT=587
 SMTP_USER=""
 SMTP_PASSWORD=""
+
 # VPS SSH Config
 SSH_USER="root"
 SSH_PORT=22
@@ -2677,12 +2997,15 @@ output/
 # 📜 LICENSE (MIT)
 ```text
 MIT License
+
 Copyright (c) 2025 Tuo Nome
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software...
+
 [il testo completo MIT License può essere trovato qui: https://opensource.org/licenses/MIT]
 ```
 # 🧩 Codice sorgente completo
@@ -2690,26 +3013,31 @@ copies of the Software...
 ```python
 """
 discover.py
+
 Modulo per la scansione automatica del server VPS e delle configurazioni docker-compose.
 Estrae informazioni utili alla generazione del playbook Ansible.
 """
+
 import os
 import subprocess
 import json
 import paramiko
 from typing import Dict, Optional
+
 def read_file(path: str) -> Optional[str]:
     try:
         with open(path, "r") as f:
             return f.read()
     except Exception:
         return None
+
 def run_command(cmd: str) -> str:
     try:
         output = subprocess.check_output(cmd, shell=True, text=True)
         return output.strip()
     except subprocess.CalledProcessError as e:
         return ""
+
 def discover_docker_compose(compose_path: str) -> Dict:
     """
     Legge un file docker-compose.yml e ne restituisce il contenuto come dizionario.
@@ -2719,6 +3047,7 @@ def discover_docker_compose(compose_path: str) -> Dict:
     if content:
         return yaml.safe_load(content)
     return {}
+
 def discover_server_info() -> Dict:
     """
     Raccoglie informazioni basilari sul server locale
@@ -2732,6 +3061,7 @@ def discover_server_info() -> Dict:
         "ssh_config": read_file("/etc/ssh/sshd_config"),
     }
     return info
+
 def ssh_discover(ip: str, user: str, port: int=22, keyfile: Optional[str]=None) -> Dict:
     """
     Esegue la scansione remota via SSH per estrarre info base (ip, hostname, docker-compose)
@@ -2754,11 +3084,13 @@ def ssh_discover(ip: str, user: str, port: int=22, keyfile: Optional[str]=None) 
         }
     except Exception as e:
         return {"error": str(e)}
+
 if __name__ == "__main__":
     import argparse
     parser = argparse.ArgumentParser(description="Modulo di discovery configurazioni")
     parser.add_argument("--compose", help="Path docker-compose.yml locale", default="docker-compose.yml")
     args = parser.parse_args()
+
     dc = discover_docker_compose(args.compose)
     server_info = discover_server_info()
     print(json.dumps({
@@ -2770,16 +3102,20 @@ if __name__ == "__main__":
 ```python
 """
 gemini_client.py
+
 Modulo per comunicare con API Gemini/OpenAI.
 Gestisce la chiamata API, invio prompt e ricezione risposta.
 """
+
 import os
 import requests
 from typing import Optional, Dict
+
 class GeminiClient:
     def __init__(self, api_key: str, base_url: str = "https://api.gemini.example.com/v1"):
         self.api_key = api_key
         self.base_url = base_url
+
     def call_api(self, prompt: str, temperature: float = 0.7, max_tokens: int = 1000) -> Optional[str]:
         headers = {
             "Authorization": f"Bearer {self.api_key}",
@@ -2803,6 +3139,7 @@ class GeminiClient:
 ```python
 """
 ansible_generator.py
+
 Modulo che prende in input dati JSON (docker-compose, server info)
 e
 ```
@@ -2863,13 +3200,19 @@ return self.get(attr, None)
 dc = data.get("docker_compose", {})
 dc_obj = Obj(dc)
 dc_obj.services = dc.get("services", {})
+
 server_info = data.get("server_info", {})
+
 template = Template(PLAYBOOK_TEMPLATE)
 rendered = template.render(docker_compose=dc_obj, server_info=server_info)
 return rendered
 ```
 ````
+
+---
+
 ### src/notifier.py
+
 ```python
 """
 notifier.py
@@ -2903,7 +3246,11 @@ def send_email(smtp_server: str, smtp_port: int, user: str, password: str, to_ad
         print(f"Errore invio email: {e}")
         return False
 ````
+
+---
+
 ### src/utils.py
+
 ```python
 """
 utils.py
@@ -2922,7 +3269,11 @@ def load_json(path: str) -> dict:
     with open(path, "r") as f:
         return json.load(f)
 ```
+
+---
+
 ### src/main.py
+
 ```python
 """
 main.py
@@ -2992,7 +3343,11 @@ def main():
 if __name__ == "__main__":
     main()
 ```
+
+---
+
 ### docker-compose.yml
+
 ```yaml
 version: "3.8"
 services:
@@ -3007,7 +3362,11 @@ services:
       - TELEGRAM_CHAT_ID=${TELEGRAM_CHAT_ID}
     command: python src/main.py --scan --generate --notify
 ```
+
+---
+
 ### scripts/run_discovery.sh
+
 ```bash
 #!/bin/bash
 # Script semplice per eseguire la discovery su VPS
@@ -3015,12 +3374,21 @@ echo "Esecuzione discovery..."
 python3 src/discover.py --compose docker-compose.yml > output/discovery.json
 echo "Discovery completata."
 ```
+
+---
+
 # 🧪 Esempi
+
 * `examples/sample_docker_compose.yml`: esempio di docker-compose
 * `examples/sample_config.json`: dati server simulati
 * `examples/generated_playbook.yml`: playbook di esempio generato
+
+---
+
 # 📚 Testing
+
 Esempio test `tests/test_discover.py`:
+
 ```python
 import unittest
 from src import discover
@@ -3034,51 +3402,263 @@ class TestDiscover(unittest.TestCase):
 if __name__ == "__main__":
     unittest.main()
 ```
+
+---
+
+---
+
 Se vuoi posso anche aiutarti a creare GitHub Actions CI, estendere l’integrazione con più API o migliorare la parte di analisi e sicurezza.
 Fammi sapere!
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa
+
+
+---
+---
+
 aaa
+
+---
+---
+
 aaa

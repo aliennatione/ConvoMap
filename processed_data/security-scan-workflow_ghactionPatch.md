@@ -1,4 +1,3 @@
-Ecco un progetto completo, coeso e pronto per essere usato come base GitHub repository per aggiungere un workflow GitHub Actions di security scan (con CodeQL, Semgrep, npm audit, ripgrep, e uno script Node.js personalizzato) più la cartella `tools/` con script e regole.
 # 📁 Struttura del progetto (riassunto)
 ```
 security-scan-workflow/
@@ -17,23 +16,33 @@ security-scan-workflow/
 ## README.md
 ```markdown
 # Security Scan Workflow per Repository GitHub
+
 ## Obiettivi del progetto
+
 Questo progetto fornisce un workflow GitHub Actions completo per eseguire analisi di sicurezza automatizzate su repository contenenti codice JavaScript/TypeScript (ma facilmente adattabile ad altri linguaggi). Include anche strumenti personalizzati per migliorare il controllo di sicurezza.
+
 ## Contesto e finalità
+
 L'idea nasce dalla necessità di integrare una pipeline di sicurezza facile da attivare in repository pubblici o privati, che consenta di:
+
 - Individuare vulnerabilità note tramite `npm audit`
 - Trovare pattern sospetti (es. logging di dati sensibili, chiamate a `eval`, hardcoded URL HTTP) con `ripgrep` e script personalizzati
 - Analizzare il codice con Semgrep usando regole custom
 - Eseguire scansione CodeQL ufficiale di GitHub per vulnerabilità più complesse
 - Fornire report dettagliati facilmente scaricabili come artifact GitHub Actions
+
 Questa configurazione è particolarmente utile per progetti open source, ma anche per repository privati che desiderano migliorare la sicurezza automatica.
+
 ## Struttura del progetto
+
 - `.github/workflows/security-scan.yml`: Workflow GitHub Actions per la scansione di sicurezza
 - `tools/quick-scan.js`: Script Node.js che cerca pattern sospetti nel codice
 - `tools/semgrep-rules.yml`: Regole personalizzate per Semgrep (analisi statica)
 - `.gitignore`: File per ignorare file e cartelle non necessari
 - `package.json`: Configurazione base NPM per installare dipendenze e consentire `npm audit`
+
 ## Istruzioni per l’installazione e l’uso
+
 1. **Clona questo repository** (o applica la patch al tuo repo esistente).
 2. **Abilita GitHub Actions** nel repository.
 3. Il workflow `security-scan.yml` si attiverà automaticamente su:
@@ -45,65 +54,84 @@ Questa configurazione è particolarmente utile per progetti open source, ma anch
    - Modifica o aggiungi pattern in `tools/quick-scan.js`
    - Aggiorna le regole in `tools/semgrep-rules.yml`
    - Puoi adattare `security-scan.yml` per altri linguaggi o ambienti
+
 ## Tecnologie utilizzate
+
 - [GitHub Actions](https://docs.github.com/en/actions)
 - [CodeQL](https://securitylab.github.com/tools/codeql)
 - [Semgrep](https://semgrep.dev/)
 - [Node.js](https://nodejs.org/)
 - [ripgrep](https://github.com/BurntSushi/ripgrep)
 - [npm audit](https://docs.npmjs.com/cli/v9/commands/npm-audit)
+
 ## Licenza
+
 Questo progetto è rilasciato sotto licenza MIT. Vedi il file `LICENSE` per dettagli.
+
+---
+
+> Creato con passione per aiutarti a mantenere sicuri i tuoi progetti.
 ```
 ## .github/workflows/security-scan.yml
 ```yaml
 name: Security scan
+
 on:
   workflow_dispatch: {}
   push:
     branches: [ "main", "master" ]
   pull_request:
     branches: [ "main", "master" ]
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest
     permissions:
       contents: read
       security-events: write
+
     steps:
     - name: Checkout repo
       uses: actions/checkout@v4
       with:
         fetch-depth: 0
+
     - name: Setup Node.js
       uses: actions/setup-node@v4
       with:
         node-version: "18"
+
     - name: Ensure tools & ripgrep
       run: |
         sudo apt-get update -y
         sudo apt-get install -y ripgrep unzip jq
+
     - name: Install dependencies
       run: |
         if [ -f package-lock.json ]; then npm ci; else npm install; fi
       env:
         NODE_AUTH_TOKEN: ${{ secrets.NPM_TOKEN || '' }}
+
     - name: Run npm audit
       run: |
         mkdir -p security-reports
         npm audit --json > security-reports/npm-audit.json || true
         jq '{vulnerabilities:.vulnerabilities,metadata:.metadata}' security-reports/npm-audit.json > security-reports/npm-audit-summary.json || true
+
     - name: Run ripgrep quick patterns
       run: |
         mkdir -p security-reports
         rg --hidden --no-ignore-vcs --line-number --no-heading \
           "console\.log|console\.error|console\.warn|phoneNumber|phone|StringSession|session.save|session\(|apiHash|apiId|process\.env|eval\(|new Function|child_process|exec\(|spawn\(|fetch\(|axios|http://|https://" \
+          > security-reports/rg-findings.txt || true
         echo "=== HEAD OF FINDINGS ===" >> security-reports/rg-findings.txt
         head -n 200 security-reports/rg-findings.txt || true
+
     - name: Run custom quick scan (node)
       run: |
         node tools/quick-scan.js > security-reports/quick-scan.json || true
         jq . security-reports/quick-scan.json || true
+
     - name: Run Semgrep
       uses: returntocorp/semgrep-action@v2
       with:
@@ -111,22 +139,27 @@ jobs:
         output: security-reports/semgrep-report.json
         format: json
       continue-on-error: true
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: javascript
+
     - name: Build (if needed)
       run: |
         echo "No build step specified."
+
     - name: Run CodeQL analysis
       uses: github/codeql-action/analyze@v3
       with:
         output: security-reports/codeql-results.sarif
+
     - name: Create reports zip
       run: |
         mkdir -p security-reports
         ls -la security-reports || true
         zip -r security-scan-reports.zip security-reports || true
+
     - name: Upload scan reports artifact
       uses: actions/upload-artifact@v4
       with:
@@ -145,10 +178,13 @@ jobs:
  *
  * Uscita: JSON dettagliato con i file, pattern trovati e linee contenenti le occorrenze.
  */
+
 const fs = require('fs');
 const path = require('path');
+
 const repoRoot = process.cwd();
 const ignoreDirs = ['node_modules', '.git', '.github', 'dist', 'build', 'coverage'];
+
 const patterns = [
   { id: 'phone', re: /\b(phone|phoneNumber|sms)\b/i },
   { id: 'session', re: /\b(StringSession|session\.save|session\s*=\s*)\b/i },
@@ -159,6 +195,7 @@ const patterns = [
   { id: 'apiKeys', re: /\b(api(Id|Hash)|api_key|apiKey|API_KEY)\b/i },
   { id: 'processenv', re: /\bprocess\.env\b/i }
 ];
+
 function walk(dir) {
   const results = [];
   const list = fs.readdirSync(dir);
@@ -182,8 +219,10 @@ function walk(dir) {
   }
   return results;
 }
+
 const files = walk(repoRoot);
 const findings = [];
+
 for (const f of files) {
   for (const p of patterns) {
     const lines = [];
@@ -200,11 +239,13 @@ for (const f of files) {
     }
   }
 }
+
 const out = {
   scanned_files: files.length,
   findings_count: findings.length,
   findings
 };
+
 console.log(JSON.stringify(out, null, 2));
 process.exit(0);
 ```
@@ -218,17 +259,20 @@ rules:
     message: "Avoid use of eval/new Function."
     severity: ERROR
     languages: [javascript,typescript]
+
   - id: js-console-phone
     pattern: console.log(...)
     message: "Avoid logging potentially sensitive variables (phone, session)."
     severity: WARNING
     languages: [javascript,typescript]
+
   - id: js-child-process
     pattern: |
       require('child_process').$X(...)
     message: "Potential command execution via child_process."
     severity: ERROR
     languages: [javascript,typescript]
+
   - id: http-hardcoded
     pattern: "http://$URL"
     message: "Hardcoded HTTP URL found; prefer HTTPS and validate target hosts."
@@ -239,23 +283,29 @@ rules:
 ```
 # Node modules
 node_modules/
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
 # Dependency directories
 dist/
 build/
 coverage/
+
 # System files
 .DS_Store
 Thumbs.db
+
 # GitHub Actions cache
 .github/actions/cache/
+
 # Environment files
 .env
 .env.local
 .env.*.local
+
 # Editor config
 .vscode/
 .idea/
@@ -263,15 +313,19 @@ Thumbs.db
 ## LICENSE (MIT)
 ```text
 MIT License
+
 Copyright (c) 2025 [Your Name or Your Org]
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
+
 The above copyright notice and this permission notice shall be included in all
 copies or substantial portions of the Software.
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -301,7 +355,6 @@ SOFTWARE.
 * Semgrep è integrato tramite GitHub Action.
 * Il workflow produce artefatti compressi `security-scan-reports.zip` con tutti i risultati.
 * Da qui puoi estendere facilmente il workflow e le regole.
-Se vuoi, posso anche aiutarti a creare script per interpretare i report o adattare il tutto ad altri linguaggi.
 **Vuoi che ti generi anche uno script per estrarre report o ulteriori esempi d’uso?**
 ///
 \\\
@@ -604,12 +657,14 @@ the rights
 +OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 +SOFTWARE.
 ```
+
+---
+
 Se vuoi ti spiego qualche parte in dettaglio o ti faccio vedere un esempio concreto di output del quick-scan.js!  
 Fammi sapere!
 ```
 ///
 \\\
-Certo! Ecco due file aggiuntivi per completare il progetto:
 ### 1) `tools/extract-reports.js`
 Uno script Node.js che estrae e riassume i risultati dai vari report generati nel workflow, creando un report unico e leggibile.
 ```js
@@ -622,9 +677,12 @@ Uno script Node.js che estrae e riassume i risultati dai vari report generati ne
  * Uso:
  *    node tools/extract-reports.js
  */
+
 const fs = require('fs');
 const path = require('path');
+
 const reportsDir = path.resolve(process.cwd(), 'security-reports');
+
 function safeReadJson(filename) {
   try {
     const content = fs.readFileSync(path.join(reportsDir, filename), 'utf-8');
@@ -633,6 +691,7 @@ function safeReadJson(filename) {
     return null;
   }
 }
+
 function printNpmAuditSummary() {
   const audit = safeReadJson('npm-audit-summary.json');
   if (!audit) {
@@ -650,6 +709,7 @@ function printNpmAuditSummary() {
   }
   console.log('');
 }
+
 function printQuickScanSummary() {
   const quickScan = safeReadJson('quick-scan.json');
   if (!quickScan) {
@@ -670,6 +730,7 @@ function printQuickScanSummary() {
   }
   console.log('');
 }
+
 function printSemgrepSummary() {
   const semgrepRaw = safeReadJson('semgrep-report.json');
   if (!semgrepRaw || !semgrepRaw.results) {
@@ -692,6 +753,7 @@ function printSemgrepSummary() {
   }
   console.log('');
 }
+
 function printCodeQLSummary() {
   // CodeQL results are in SARIF format (JSON), can be complex to parse fully
   const sarifPath = path.join(reportsDir, 'codeql-results.sarif');
@@ -718,6 +780,7 @@ function printCodeQLSummary() {
   }
   console.log('');
 }
+
 function main() {
   console.log('=== Security Scan Combined Report ===\n');
   printNpmAuditSummary();
@@ -726,6 +789,7 @@ function main() {
   printCodeQLSummary();
   console.log('=== End of Report ===');
 }
+
 main();
 ```
 ### 2) Aggiornamento `package.json`
@@ -744,33 +808,54 @@ Aggiungiamo uno script per eseguire facilmente l’estrazione:
 Esempi d’uso per aiutare chi usa il repo:
 ````markdown
 # Esempi di uso
+
 ## 1. Eseguire la scansione rapida
+
 ```bash
 npm run quickscan
 ````
+
 Output JSON con pattern sospetti trovati nei file.
+
 ## 2. Eseguire il workflow completo (su GitHub Actions)
+
 Il workflow `security-scan.yml` fa partire automaticamente scansioni con:
+
 * `npm audit`
 * ricerca pattern con ripgrep
 * script `quick-scan.js`
 * Semgrep
 * CodeQL
+
 ## 3. Estrarre e visualizzare il report completo
+
 Dopo che i report sono stati generati, puoi creare un report leggibile con:
+
 ```bash
 npm run extract-report
 ```
+
 Questo aggrega i dati da tutti i tool di scanning in una sintesi facilmente consultabile.
+
 ```
-Se vuoi, posso darti tutto già integrato in un’unica patch diff da applicare al tuo repo! Vuoi?
 ```
+
+---
 ///
 \\\
+---
+
 Ecco il progetto completo, pronto per essere pubblicato come repository GitHub.
 Contiene la patch da applicare a un repo esistente per aggiungere un workflow GitHub Actions di security scan, con tool di scansione multipli e script di estrazione report.
+
+---
+
 # 📦 **security-scan-integration**
+
+---
+
 ## 1. README.md
+
 ````markdown
 # Security Scan Integration for Node.js Repositories
 ## Obiettivi del progetto
@@ -833,7 +918,11 @@ security-scan-integration/
 ## Licenza
 Questo progetto è rilasciato sotto licenza MIT — vedi il file LICENSE per i dettagli.
 ````
+
+---
+
 ## 2. Struttura cartelle e file
+
 ```plaintext
 security-scan-integration/
 ├── .github/
@@ -849,8 +938,13 @@ security-scan-integration/
 ├── package.json
 └── README.md
 ````
+
+---
+
 ## 3. Codice sorgente completo
+
 ### `.github/workflows/security-scan.yml`
+
 ```yaml
 name: Security Scan Workflow
 on:
@@ -909,7 +1003,11 @@ jobs:
         name: security-reports
         path: security-reports/
 ```
+
+---
+
 ### `tools/quick-scan.js`
+
 ```js
 /**
  * tools/quick-scan.js
@@ -964,7 +1062,11 @@ if (require.main === module) {
 }
 module.exports = { scan };
 ```
+
+---
+
 ### `tools/extract-reports.js`
+
 ```js
 /**
  * tools/extract-reports.js
@@ -1079,7 +1181,11 @@ function main() {
 }
 main();
 ```
+
+---
+
 ### `examples/README.md`
+
 ````markdown
 # Esempi di uso
 ## 1. Eseguire la scansione rapida
@@ -1101,7 +1207,11 @@ npm run extract-report
 ```
 Questo aggrega i dati da tutti i tool di scanning in una sintesi facilmente consultabile.
 ````
+
+---
+
 ### `.gitignore`
+
 ```gitignore
 node_modules/
 security-reports/
@@ -1110,7 +1220,11 @@ security-reports/
 .DS_Store
 .vscode/
 ````
+
+---
+
 ### `package.json`
+
 ```json
 {
   "name": "security-scan-integration",
@@ -1134,7 +1248,11 @@ security-reports/
   "devDependencies": {}
 }
 ```
+
+---
+
 ### LICENSE (MIT)
+
 ```text
 MIT License
 Copyright (c) 2025
@@ -1154,11 +1272,17 @@ LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
 OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
 SOFTWARE.
 ```
+
+---
+
 ## 4. Patch da applicare a un repo esistente
+
 Salva questo contenuto in `security-scan.patch` nella root del repo e applica con:
+
 ```bash
 git apply security-scan.patch
 ```
+
 ```diff
 diff --git a/package.json b/package.json
 index e69de29..f3a9b30 100644
@@ -1201,6 +1325,8 @@ new file mode 100644
 +
 diff --git a/.github/workflows/security-scan.yml
 ```
+
+
 b/.github/workflows/security-scan.yml
 new file mode 100644
 --- /dev/null
@@ -1209,6 +1335,7 @@ new file mode 100644
 +name: Security Scan Workflow
 +
 +on:
+
 * push:
 * branches: [ main ]
 * pull_request:
@@ -1216,7 +1343,9 @@ new file mode 100644
 * schedule:
 * * cron: '26 7 * * 1'
 *
+
 +jobs:
+
 * security-scan:
 * runs-on: ubuntu-latest
 * permissions:
@@ -1339,12 +1468,14 @@ new file mode 100644
      path: security-reports/
   ```
 *
+
 diff --git a/tools/extract-reports.js b/tools/extract-reports.js
 new file mode 100644
 --- /dev/null
 +++ b/tools/extract-reports.js
 @@ -0,0 +1,101 @@
 +/**
+
 * * tools/extract-reports.js
 * *
 * * Aggregates security scan reports into a readable summary.
@@ -1353,12 +1484,14 @@ new file mode 100644
 * * node tools/extract-reports.js
 * */
 *
+
 +const fs = require('fs');
 +const path = require('path');
 +
 +const reportsDir = path.resolve(process.cwd(), 'security-reports');
 +
 +function safeReadJson(filename) {
+
 * try {
 * const content = fs.readFileSync(path.join(reportsDir, filename), 'utf-8');
 * return JSON.parse(content);
@@ -1367,7 +1500,9 @@ new file mode 100644
 * }
   +}
 *
+
 +function printNpmAuditSummary() {
+
 * const audit = safeReadJson('npm-audit-summary.json');
 * if (!audit) {
 * console.log('No npm audit summary found.');
@@ -1422,7 +1557,9 @@ new file mode 100644
 * console.log('');
   +}
 *
+
 +function printSemgrepSummary() {
+
 * const semgrepRaw = safeReadJson('semgrep-report.json');
 * if (!semgrepRaw || !semgrepRaw.results) {
 * console.log('No Semgrep report found.');
@@ -1603,21 +1740,34 @@ new file mode 100644
 * }
   +}
 *
+
 +if (require.main === module) {
+
 * const report = scan();
 * console.log(JSON.stringify(report, null, 2));
   +}
 *
+
 +module.exports = { scan };
+
 ```
-Se vuoi, posso aiutarti a creare direttamente un repo GitHub con questo contenuto o esportarlo in un archivio zip.  
-Fammi sapere!
 ```
+
+---
 ///
 \\\
+---
+
 Certo! Ecco un progetto completo pronto per GitHub, con workflow GitHub Actions multi-linguaggio per scansioni di sicurezza, script, patch per integrare nel tuo repo e istruzioni dettagliate.
+
+---
+
 # Output progetto completo
+
+---
+
 ## 1. README.md
+
 ```markdown
 # Security Scan Automation for Multi-language Repositories
 ## Obiettivi del progetto
@@ -1654,6 +1804,7 @@ Questo progetto mostra come configurare un workflow GitHub Actions multi-linguag
 - Script in Python per aggregazione report
 ## 2. Struttura delle cartelle e file
 ```
+
 security-scan/
 ├── .github/
 │   └── workflows/
@@ -1668,11 +1819,13 @@ security-scan/
 ├── .gitignore
 ├── LICENSE
 └── requirements.txt
+
 ````
 ## 3. Codice sorgente e configurazioni
 ### `.github/workflows/security-scan.yml`
 ```yaml
 name: Security Scan Multi-language
+
 on:
   push:
     branches: [ "main" ]
@@ -1680,6 +1833,7 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: '0 2 * * 1' # Ogni lunedì alle 02:00
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest
@@ -1688,51 +1842,63 @@ jobs:
       contents: read
       actions: read
       packages: read
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
     # Setup Node.js and run npm audit for JS
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
+
     - name: Install JS dependencies
       run: npm install || echo "No package.json found"
+
     - name: Run npm audit (JS only)
       run: |
         mkdir -p security-reports
         npm audit --json > security-reports/npm-audit.json || true
+
     # Setup Python and run Bandit scan
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
+
     - name: Install Bandit
       run: pip install bandit
+
     - name: Run Bandit scan (Python)
       run: |
         mkdir -p security-reports
         bandit -r . -f json -o security-reports/bandit-report.json || true
+
     # Run ripgrep to find secrets/keys in any language
     - name: Run ripgrep for secrets
       run: |
         mkdir -p security-reports
         rg --json --json-path '.data.lines[0].text' --json-seq --json-seq-delim '\n' 'token|password|secret|apikey|api_key|access_key|auth' > security-reports/ripgrep-report.json || true
+
     # Run Semgrep scan for multi-language
     - name: Run semgrep scan
       uses: returntocorp/semgrep-action@v1
       with:
         config: "p/ci"
         output: security-reports/semgrep-report.json
+
     # Initialize CodeQL for multi-language
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: javascript, python, php, bash
+
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
       with:
         category: '/language:javascript'
+
     # Upload all reports as artifact
     - name: Upload Security Reports
       uses: actions/upload-artifact@v3
@@ -1744,6 +1910,7 @@ jobs:
 ```python
 import json
 import os
+
 def extract_vulnerabilities_from_npm_audit(path):
     results = []
     try:
@@ -1760,6 +1927,7 @@ def extract_vulnerabilities_from_npm_audit(path):
     except Exception as e:
         print(f"Error reading npm audit report: {e}")
     return results
+
 def extract_bandit_issues(path):
     results = []
     try:
@@ -1769,6 +1937,7 @@ def extract_bandit_issues(path):
     except Exception as e:
         print(f"Error reading bandit report: {e}")
     return results
+
 def extract_semgrep_issues(path):
     results = []
     try:
@@ -1778,27 +1947,33 @@ def extract_semgrep_issues(path):
     except Exception as e:
         print(f"Error reading semgrep report: {e}")
     return results
+
 def main():
     reports_dir = "security-reports"
     print("=== Vulnerabilities and Security Findings ===\n")
+
     npm_results = extract_vulnerabilities_from_npm_audit(os.path.join(reports_dir, 'npm-audit.json'))
     print(f"\nNPM Audit Results ({len(npm_results)} vulnerabilities):")
     for r in npm_results:
         print(f" - [{r['severity']}] {r['module']}: {r['title']} ({r['url']})")
+
     bandit_results = extract_bandit_issues(os.path.join(reports_dir, 'bandit-report.json'))
     print(f"\nBandit (Python) Findings ({len(bandit_results)} issues):")
     for r in bandit_results:
         print(f" - {r.get('filename')}:{r.get('line_number')} - {r.get('test_name')} - {r.get('issue_text')}")
+
     semgrep_results = extract_semgrep_issues(os.path.join(reports_dir, 'semgrep-report.json'))
     print(f"\nSemgrep Findings ({len(semgrep_results)} issues):")
     for r in semgrep_results:
         print(f" - {r.get('path')}:{r.get('start').get('line', '?')} - {r.get('extra').get('severity', '?')} - {r.get('check_id')}")
+
 if __name__ == "__main__":
     main()
 ```
 ### `tools/helpers.py`
 ```python
 # Helpers per estrazione report, estendibili
+
 def format_issue(issue):
     return f"{issue.get('path')}:{issue.get('start', {}).get('line')} - {issue.get('extra', {}).get('severity')} - {issue.get('check_id')}"
 ```
@@ -1912,13 +2087,16 @@ bandit
 ### LICENSE
 ```text
 MIT License
+
 Copyright (c) 2025 [Tuo Nome o Organizzazione]
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -1932,29 +2110,31 @@ THE SOFTWARE.
 # Clona il tuo repo
 git clone https://github.com/tuoaccount/tuorepo.git
 cd tuorepo
+
 # Copia i file e cartelle da questo progetto (o applica la patch manualmente)
 # Ad esempio:
 mkdir -p .github/workflows
 cp /percorso/security-scan/.github/workflows/security-scan.yml .github/workflows/
+
 mkdir -p tools
 cp /percorso/security-scan/tools/* tools/
+
 cp PATCH.md .
 cp README.md .
 cp .gitignore .
 cp requirements.txt .
 cp LICENSE .
+
 # Aggiungi e committa
 git add .
 git commit -m "Aggiunge workflow security scan multi-lingua + script di estrazione report"
 git push origin main
+
 # Verifica nella pagina Actions di GitHub il workflow in esecuzione
 ```
-Se vuoi posso aiutarti anche a creare regole personalizzate Semgrep o a integrare altri scanner specifici.
-Fammi sapere!
 Vuoi che ti aiuti a preparare il repo o vuoi anche i file direttamente in formato ZIP o simile?
 ///
 \\\
-Perfetto! Ti preparo una versione avanzata del progetto con:
 * Regole personalizzate Semgrep dedicate a sicurezza e data leak (per i linguaggi JS, Python, PHP, Bash)
 * Integrazione con altri scanner specifici utili (ad esempio: Trivy per container/secrets, PHPStan per PHP static analysis, ShellCheck per bash linting)
 * Aggiornamento del workflow e degli script di reporting per aggregare anche questi nuovi scanner
@@ -1995,6 +2175,7 @@ Modifico `tools/extract_reports.py` per leggere anche i report nuovi.
 ## `.github/workflows/security-scan.yml`
 ```yaml
 name: Security Scan Multi-language Advanced
+
 on:
   push:
     branches: [ "main" ]
@@ -2002,6 +2183,7 @@ on:
     branches: [ "main" ]
   schedule:
     - cron: '0 3 * * 1' # Ogni lunedì 03:00
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest
@@ -2010,52 +2192,66 @@ jobs:
       contents: read
       actions: read
       packages: read
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
+
     - name: Install JS dependencies
       run: npm install || echo "No package.json found"
+
     - name: Run npm audit (JS only)
       run: |
         mkdir -p security-reports
         npm audit --json > security-reports/npm-audit.json || true
+
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
+
     - name: Install Bandit, PHPStan, ShellCheck
       run: |
         pip install bandit
         sudo apt-get install -y shellcheck php-cli php-xml php-mbstring
         composer global require phpstan/phpstan || echo "Composer not found or PHPStan already installed"
+
     - name: Run Bandit scan (Python)
       run: bandit -r . -f json -o security-reports/bandit-report.json || true
+
     - name: Run ShellCheck (Bash scripts)
       run: |
         mkdir -p security-reports/shellcheck
         find . -name '*.sh' -exec shellcheck -f json -o security-reports/shellcheck/{}.json {} \; || true
+
     - name: Run PHPStan (PHP)
       run: |
         ~/.composer/vendor/bin/phpstan analyse --error-format=json > security-reports/phpstan-report.json || true
+
     - name: Run ripgrep for secrets
       run: |
         mkdir -p security-reports
         rg --json --json-path '.data.lines[0].text' --json-seq --json-seq-delim '\n' 'token|password|secret|apikey|api_key|access_key|auth' > security-reports/ripgrep-report.json || true
+
     - name: Run semgrep scan with custom rules
       uses: returntocorp/semgrep-action@v1
       with:
         config: "./semgrep-rules"
         output: security-reports/semgrep-report.json
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: javascript, python, php, bash
+
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
+
     - name: Upload Security Reports
       uses: actions/upload-artifact@v3
       with:
@@ -2086,6 +2282,7 @@ rules:
 import json
 import os
 import glob
+
 def extract_phpstan_issues(path):
     results = []
     try:
@@ -2095,6 +2292,7 @@ def extract_phpstan_issues(path):
     except Exception as e:
         print(f"Error reading PHPStan report: {e}")
     return results
+
 def extract_shellcheck_issues(dir_path):
     issues = []
     try:
@@ -2106,70 +2304,91 @@ def extract_shellcheck_issues(dir_path):
     except Exception as e:
         print(f"Error reading ShellCheck reports: {e}")
     return issues
+
 #... (resto codice estrazione come prima)
+
 def main():
     reports_dir = "security-reports"
     print("=== Vulnerabilities and Security Findings ===\n")
+
     # Esempio chiamate estese:
     phpstan_issues = extract_phpstan_issues(os.path.join(reports_dir, 'phpstan-report.json'))
     shellcheck_issues = extract_shellcheck_issues(os.path.join(reports_dir, 'shellcheck'))
+
     print(f"\nPHPStan Issues: {len(phpstan_issues)}")
     for file_issues in phpstan_issues:
         for error in file_issues.get('errors', []):
             print(f" - {error}")
+
     print(f"\nShellCheck Issues: {len(shellcheck_issues)}")
     for issue in shellcheck_issues:
         print(f" - {issue.get('file')}:{issue.get('line')} - {issue.get('message')}")
+
     # (continua con estrazioni precedenti...)
 ```
 # Ulteriori consigli e personalizzazioni
 * Puoi ampliare la cartella `semgrep-rules/` con più regole mirate ai tuoi rischi specifici
 * Il workflow può essere parametrizzato per scansionare branch o tag specifici
 * Puoi aggiungere notifiche (Slack, email) per alert in caso di vulnerabilità critiche
-Se vuoi, ti posso generare il progetto completo in un unico output come prima, con tutto questo integrato e pronto da pushare su GitHub.
 Oppure ti posso fornire i singoli file per integrazione.
-Fammi sapere!
 ///
 \\\
-Eccoti il progetto completo, aggiornato e pronto per essere pubblicato come repository GitHub.
 # tgfeed-security-enhancer
 **Obiettivo:**
 Fornire una suite avanzata e multi-linguaggio per la scansione di sicurezza dei repository (come `tgfeed`), integrando CodeQL, Semgrep con regole personalizzate, Bandit, PHPStan, ShellCheck e altri scanner. Il progetto include un workflow GitHub Actions parametrizzabile e script di estrazione report per facilitare la valutazione delle vulnerabilità.
 ## 1. README.md
 ````markdown
 # tgfeed-security-enhancer
+
 ## Obiettivi del progetto
+
 Fornire un sistema integrato di scansione di sicurezza per repository software multi-linguaggio, capace di individuare vulnerabilità, cattive pratiche e possibili divulgazioni di dati sensibili, con un workflow CI/CD completo su GitHub Actions.
+
 ## Contesto e Finalità
+
 La sicurezza del codice è cruciale. Questo progetto nasce dall'esigenza di analizzare e garantire sicurezza su progetti come [tgfeed](https://github.com/sshrshnv/tgfeed), estendendo l'analisi a JavaScript, Python, PHP, Bash, e altri linguaggi grazie a tool multipli (CodeQL, Semgrep, Bandit, PHPStan, ShellCheck, Trivy).
+
 ## Funzionalità principali
+
 - Workflow GitHub Actions per scansione automatica e schedulata
 - Semgrep con regole personalizzate specifiche per hardcoded secrets, uso pericoloso di funzioni, logging di dati sensibili
 - Integrazione con CodeQL per scansioni approfondite
 - Supporto per Bandit (Python), PHPStan (PHP), ShellCheck (Bash)
 - Report aggregati salvati come artifact e script per estrazione dettagliata
 - Parametrizzazione branch/tag per scansioni mirate
+
 ## Istruzioni di installazione e uso
+
 ### Clona il repository o applica la patch al tuo repo esistente:
+
 ```bash
 git clone https://github.com/tuoutente/tgfeed-security-enhancer.git
 ````
+
 oppure applica la patch (fornita in `patches/add-security-scan.patch`) al tuo repo:
+
 ```bash
 git apply patches/add-security-scan.patch
 ```
+
 ### Configurazione
+
 * Modifica il file `.github/workflows/security-scan.yml` per specificare branch/tag da scansionare (di default: `main`)
 * Personalizza o aggiungi regole Semgrep nella cartella `semgrep-rules/`
 * Installa dipendenze necessarie se vuoi eseguire scansioni localmente
+
 ### Esecuzione
+
 * Il workflow GitHub Actions esegue automaticamente le scansioni su push, pull request o schedulazione settimanale
 * I report vengono salvati in `security-reports/` e caricati come artifact
 * Per estrarre e visualizzare i report, usa:
+
 ```bash
 python3 tools/extract_reports.py
 ```
+
 ## Tecnologie utilizzate
+
 * [GitHub Actions](https://github.com/features/actions)
 * [CodeQL](https://codeql.github.com/)
 * [Semgrep](https://semgrep.dev/)
@@ -2177,7 +2396,11 @@ python3 tools/extract_reports.py
 * [PHPStan](https://phpstan.org/)
 * [ShellCheck](https://www.shellcheck.net/)
 * [Ripgrep](https://github.com/BurntSushi/ripgrep)
+
+---
+
 ## Struttura del progetto
+
 ```
 tgfeed-security-enhancer/
 ├── .github/
@@ -2198,13 +2421,22 @@ tgfeed-security-enhancer/
 ├── LICENSE
 └── README.md
 ```
+
+---
+
 ## Contatti
+
 Contribuzioni, segnalazioni o richieste di miglioramenti sono benvenute!
+
+---
+
 # Fine README.md
+
 ````
 ## 2. `.github/workflows/security-scan.yml`
 ```yaml
 name: Security Scan Multi-language Advanced
+
 on:
   push:
     branches: [ "main", "develop" ]
@@ -2213,6 +2445,7 @@ on:
   workflow_dispatch:
   schedule:
     - cron: '0 3 * * 1' # ogni lunedì alle 03:00 UTC
+
 jobs:
   security-scan:
     runs-on: ubuntu-latest
@@ -2221,48 +2454,62 @@ jobs:
       contents: read
       actions: read
       packages: read
+
     steps:
     - name: Checkout code
       uses: actions/checkout@v4
+
     - name: Setup Node.js
       uses: actions/setup-node@v3
       with:
         node-version: '18'
+
     - name: Install JS dependencies
       run: npm install || echo "No package.json found"
+
     - name: Run npm audit (JS)
       run: |
         mkdir -p security-reports
         npm audit --json > security-reports/npm-audit.json || true
+
     - name: Setup Python
       uses: actions/setup-python@v4
       with:
         python-version: '3.x'
+
     - name: Install Bandit, PHPStan, ShellCheck
       run: |
         pip install bandit semgrep
         sudo apt-get update && sudo apt-get install -y shellcheck php-cli php-xml php-mbstring
         composer global require phpstan/phpstan || echo "PHPStan install skipped"
+
     - name: Run Bandit scan (Python)
       run: bandit -r . -f json -o security-reports/bandit-report.json || true
+
     - name: Run ShellCheck (Bash)
       run: |
         mkdir -p security-reports/shellcheck
         find . -name '*.sh' -exec shellcheck -f json -o security-reports/shellcheck/{}.json {} \; || true
+
     - name: Run PHPStan (PHP)
       run: |
         ~/.composer/vendor/bin/phpstan analyse --error-format=json > security-reports/phpstan-report.json || true
+
     - name: Run ripgrep for secrets
       run: |
         rg --json --json-path '.data.lines[0].text' --json-seq --json-seq-delim '\n' 'token|password|secret|apikey|api_key|access_key|auth' > security-reports/ripgrep-report.json || true
+
     - name: Run Semgrep with custom rules
       run: semgrep --config semgrep-rules --json --output security-reports/semgrep-report.json || true
+
     - name: Initialize CodeQL
       uses: github/codeql-action/init@v3
       with:
         languages: javascript, python, php, bash
+
     - name: Perform CodeQL Analysis
       uses: github/codeql-action/analyze@v3
+
     - name: Upload Security Reports
       uses: actions/upload-artifact@v3
       with:
@@ -2272,19 +2519,29 @@ jobs:
 ## 3. `semgrep-rules/README.md`
 ````markdown
 # Regole personalizzate Semgrep
+
 Questa cartella contiene regole Semgrep per l'individuazione di vulnerabilità specifiche, cattive pratiche e possibili divulgazioni di dati sensibili.
+
 ## Regole principali
+
 - `hardcoded-secrets.yaml`: rilevamento di segreti hardcoded (password, token, chiavi)
 - `dangerous-functions.yaml`: uso di funzioni potenzialmente pericolose (`eval`, `exec`, `system`, ecc.)
 - `logging-sensitive-data.yaml`: logging di dati sensibili
+
 ## Come aggiungere nuove regole
+
 1. Creare un file `.yaml` seguendo la [documentazione ufficiale di Semgrep](https://semgrep.dev/docs/writing-rules/)
 2. Posizionarlo nella cartella `semgrep-rules/`
 3. Aggiornare il workflow GitHub Actions se necessario
+
+---
+
 ## Esempio di comando per testare localmente:
+
 ```bash
 semgrep --config semgrep-rules/ .
 ````
+
 ````
 ## 4. Esempi regole Semgrep (in `semgrep-rules/`)
 ### `hardcoded-secrets.yaml`
@@ -2314,6 +2571,7 @@ rules:
     languages: [javascript, php, python]
     metadata:
       category: security
+
   - id: dangerous-exec
     pattern: exec(...)
     message: "Use of exec can lead to command injection. Validate inputs."
@@ -2321,6 +2579,7 @@ rules:
     languages: [python]
     metadata:
       category: security
+
   - id: dangerous-system
     pattern: system(...)
     message: "Use of system calls can be dangerous. Validate inputs."
@@ -2338,12 +2597,14 @@ rules:
     message: "Logging sensitive data detected."
     severity: WARNING
     languages: [javascript]
+
   - id: python-logging-sensitive
     pattern: |
       logging.info($SENSITIVE)
     message: "Logging potentially sensitive data."
     severity: WARNING
     languages: [python]
+
   - id: php-logging-sensitive
     pattern: |
       error_log($SENSITIVE)
@@ -2354,9 +2615,11 @@ rules:
 ## 5. `tools/extract_reports.py`
 ```python
 #!/usr/bin/env python3
+
 import json
 import os
 import glob
+
 def extract_semgrep_issues(path):
     issues = []
     try:
@@ -2374,6 +2637,7 @@ def extract_semgrep_issues(path):
     except Exception as e:
         print(f"Errore nel parsing del report Semgrep: {e}")
     return issues
+
 def extract_bandit_issues(path):
     issues = []
     try:
@@ -2389,6 +2653,7 @@ def extract_bandit_issues(path):
     except Exception as e:
         print(f"Errore nel parsing del report Bandit: {e}")
     return issues
+
 def extract_phpstan_issues(path):
     issues = []
     try:
@@ -2404,6 +2669,7 @@ def extract_phpstan_issues(path):
     except Exception as e:
         print(f"Errore nel parsing del report PHPStan: {e}")
     return issues
+
 def extract_shellcheck_issues(dir_path):
     issues = []
     try:
@@ -2415,6 +2681,7 @@ def extract_shellcheck_issues(dir_path):
     except Exception as e:
         print(f"Errore nel parsing dei report ShellCheck: {e}")
     return issues
+
 def extract_ripgrep_issues(path):
     issues = []
     try:
@@ -2425,35 +2692,46 @@ def extract_ripgrep_issues(path):
     except Exception as e:
         print(f"Errore nel parsing del report Ripgrep: {e}")
     return issues
+
 def main():
     reports_dir = "security-reports"
     print("\n=== Vulnerabilities and Security Findings ===\n")
+
     semgrep = extract_semgrep_issues(os.path.join(reports_dir, "semgrep-report.json"))
     print(f"Semgrep issues: {len(semgrep)}")
     for i in semgrep:
         print(f"- [{i['severity']}] {i['file']}:{i['start_line']} - {i['message']} ({i['check_id']})")
+
     bandit = extract_bandit_issues(os.path.join(reports_dir, "bandit-report.json"))
     print(f"\nBandit issues: {len(bandit)}")
     for i in bandit:
         print(f"- [{i['severity']}] {i['filename']}:{i['line_number']} - {i['issue_text']}")
+
     phpstan = extract_phpstan_issues(os.path.join(reports_dir, "phpstan-report.json"))
     print(f"\nPHPStan issues: {len(phpstan)}")
     for i in phpstan:
         print(f"- {i['file']} - {i['message']}")
+
     shellcheck = extract_shellcheck_issues(os.path.join(reports_dir, "shellcheck"))
     print(f"\nShellCheck issues: {len(shellcheck)}")
     for i in shellcheck:
         print(f"- {i.get('file')}:{i.get('line')} - {i.get('message')}")
+
     ripgrep = extract_ripgrep_issues(os.path.join(reports_dir, "ripgrep-report.json"))
     print(f"\nRipgrep findings (possible secrets): {len(ripgrep)}")
     for i in ripgrep:
         print(f"- {i.get('data', {}).get('lines', [{}])[0].get('text', '').strip()}")
+
 if
 ```
 **name** == "**main**":
 main()
 ```
+
+---
+
 ## 6. `.gitignore`
+
 ```
 # Logs
 logs
@@ -2476,7 +2754,11 @@ security-reports/
 venv/
 .env/
 ```
+
+---
+
 ## 7. LICENSE (MIT)
+
 ```
 MIT License
 Copyright (c) 2025 [Tuo Nome]
@@ -2488,7 +2770,11 @@ copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
 [...standard MIT license text...]
 ````
+
+---
+
 ## 8. Patch `patches/add-security-scan.patch`
+
 ```diff
 diff --git a/.github/workflows/security-scan.yml b/.github/workflows/security-scan.yml
 new file mode 100644
@@ -2704,7 +2990,10 @@ index 0000000..4567890
 +
 +def extract_phpstan
 ````
+
+
 _issues(path):
+
 * issues = []
 * try:
 * ```
@@ -2782,7 +3071,9 @@ _issues(path):
   ```
 * return issues
 *
+
 +def main():
+
 * reports_dir = "security-reports"
 * print("\n=== Vulnerabilities and Security Findings ===\n")
 *
@@ -2824,11 +3115,18 @@ _issues(path):
 +if **name** == "**main**":
 * main()
 ```
+
+---
+
 ### Ora puoi:
+
 - clonare il repo o applicare la patch
 - personalizzare i branch/tag da scansionare nel workflow `.github/workflows/security-scan.yml`
 - aggiungere o modificare regole Semgrep in `semgrep-rules/`
 - eseguire `python3 tools/extract_reports.py` per aggregare e visualizzare i risultati
+
+---
+
 Se vuoi, posso anche fornirti uno script per eseguire tutte le scansioni localmente o ulteriori regole Semgrep mirate!  
 Fammi sapere! 🚀
 ```

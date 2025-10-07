@@ -1,4 +1,3 @@
-Perfetto! Procediamo allora a costruire un **manuale base di programmazione usando il paradigma dichiarativo**, sfruttando Ansible come “linguaggio” didattico.
 Ti mostrerò esempi concreti di come esprimere i concetti fondamentali (variabili, condizioni, cicli, modularità) usando Ansible, e confronterò brevemente con Python o pseudocodice per mettere a fuoco le differenze e punti di forza.
 # Manuale base di programmazione dichiarativa con Ansible
 ## 1. Variabili e assegnazione
@@ -37,6 +36,7 @@ tasks:
     debug:
       msg: "Maggiore di 5"
     when: x > 5
+
   - name: Altrimenti
     debug:
       msg: "Minore o uguale a 5"
@@ -72,6 +72,7 @@ tasks:
 ```python
 def saluta(nome):
     print(f"Ciao {nome}")
+
 saluta("Mario")
 saluta("Luca")
 ```
@@ -81,6 +82,7 @@ saluta("Luca")
 - hosts: all
   roles:
     - saluto
+
 # roles/saluto/tasks/main.yml
 - name: Saluta l'utente
   debug:
@@ -97,6 +99,7 @@ vars:
     - mario
     - luca
     - anna
+
 tasks:
   - name: Saluta solo se nome ha più di 3 lettere
     debug:
@@ -122,8 +125,6 @@ tasks:
 * Le strutture di controllo si traducono in condizioni associate a task più che in blocchi di codice.
 * Modularità e riusabilità sono gestite tramite ruoli e include.
 * Puoi affiancare esempi in Python per chiarire i concetti e mostrare le differenze.
-Se vuoi, posso aiutarti a sviluppare un vero e proprio testo didattico con capitoli e esercizi usando questo approccio! Vuoi partire da lì?
-Perfetto! Procediamo con un progetto strutturato per un **manuale didattico di programmazione base usando Ansible come linguaggio dichiarativo**.
 # 📚 Manuale di Programmazione Base con Ansible (dichiarativo)
 ## Obiettivo
 * Insegnare i concetti base della programmazione (variabili, condizioni, cicli, modularità) in modo dichiarativo usando Ansible.
@@ -159,49 +160,74 @@ ansible-declarative-tutorial/
 ### README.md
 ````markdown
 # Manuale di Programmazione Base con Ansible (Dichiarativo)
+
 Questo progetto è un tutorial/manuale per apprendere i fondamenti della programmazione usando Ansible, con un focus sul paradigma dichiarativo.
+
 ## Obiettivi
+
 - Imparare variabili, condizioni, cicli, modularità usando Ansible.
 - Comprendere differenze tra programmazione imperativa e dichiarativa.
 - Esempi pratici e confronto con Python.
 - Preparare la base per corsi o testi didattici.
+
 ## Struttura
+
 - `docs/`: capitoli del tutorial in Markdown.
 - `examples/`: playbook e ruoli Ansible esemplificativi.
 - `requirements.txt`: dipendenze (es. Ansible).
+
 ## Prerequisiti
+
 - Python 3.8+
 - Ansible 2.10+
+
 ## Installazione
+
 ```bash
 pip install -r requirements.txt
 ````
+
 ## Esecuzione esempi
+
 ```bash
 ansible-playbook examples/variables.yml
 ```
+
 ## Contributi
+
 Benvenuti! Apri issue o pull request per suggerimenti o correzioni.
+
+---
+
 ## Licenza
+
 MIT License
+
 ````
 ### docs/01_intro.md
 ```markdown
 # Introduzione
+
 Questo tutorial usa Ansible per insegnare i concetti base della programmazione in modo dichiarativo.
+
 Cos'è la programmazione dichiarativa? Contrariamente alla programmazione imperativa, descrive il *cosa* fare, non il *come*.
+
 Ansible è uno strumento di automazione dichiarativo che permette di definire lo stato desiderato.
+
 Nei capitoli successivi vedremo come usare variabili, condizioni, cicli e modularità.
 ````
 ### examples/variables.yml
 ```yaml
+---
 # Esempio di uso di variabili in Ansible
 - hosts: localhost
   gather_facts: false
+
   vars:
     x: 10
     y: 20
     z: "{{ x + y }}"
+
   tasks:
     - name: Mostra il valore di z (x + y)
       debug:
@@ -209,16 +235,20 @@ Nei capitoli successivi vedremo come usare variabili, condizioni, cicli e modula
 ```
 ### examples/conditions.yml
 ```yaml
+---
 # Esempio di condizioni in Ansible
 - hosts: localhost
   gather_facts: false
+
   vars:
     x: 10
+
   tasks:
     - name: Messaggio se x è maggiore di 5
       debug:
         msg: "x è maggiore di 5"
       when: x > 5
+
     - name: Messaggio se x è minore o uguale a 5
       debug:
         msg: "x è minore o uguale a 5"
@@ -226,14 +256,17 @@ Nei capitoli successivi vedremo come usare variabili, condizioni, cicli e modula
 ```
 ### examples/loops.yml
 ```yaml
+---
 # Esempio di ciclo (loop) in Ansible
 - hosts: localhost
   gather_facts: false
+
   vars:
     users:
       - mario
       - luca
       - anna
+
   tasks:
     - name: Saluto per ogni utente nella lista
       debug:
@@ -242,25 +275,32 @@ Nei capitoli successivi vedremo come usare variabili, condizioni, cicli e modula
 ```
 ### examples/roles/saluto/tasks/main.yml
 ```yaml
+---
 # Ruolo Ansible per saluto personalizzato
+
 - name: Saluta l'utente
   debug:
     msg: "Ciao {{ nome }}"
 ```
 ### examples/complete_example.yml
 ```yaml
+---
 # Esempio completo con variabili, condizioni, cicli e ruolo
+
 - hosts: localhost
   gather_facts: false
+
   vars:
     utenti:
       - mario
       - luca
       - anna
+
   roles:
     - role: saluto
       vars:
         nome: "default"
+
   tasks:
     - name: Saluta solo utenti con nome lungo > 3 caratteri
       include_role:
@@ -277,7 +317,9 @@ ansible>=2.10
 ### LICENSE
 ```text
 MIT License
+
 Copyright (c) 2025 [Tuo Nome]
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 ...
 ```
@@ -285,73 +327,106 @@ Permission is hereby granted, free of charge, to any person obtaining a copy
 * Posso aiutarti a scrivere i singoli capitoli Markdown con spiegazioni più dettagliate e quiz.
 * Possiamo aggiungere esempi più complessi, gestione errori, test.
 * Possiamo creare un piccolo sito web statico per mostrare il tutorial.
-Se vuoi, ti mando subito i file singoli o procediamo con il primo capitolo completo?
 Certissimo! Ecco la struttura base del progetto con i file singoli, completi di contenuto iniziale e commenti, così puoi partire subito.
 ## 1. `README.md`
 ````markdown
 # Manuale di Programmazione Base con Ansible (Dichiarativo)
+
 Questo progetto è un tutorial/manuale per apprendere i fondamenti della programmazione usando Ansible, con un focus sul paradigma dichiarativo.
+
 ## Obiettivi
+
 - Imparare variabili, condizioni, cicli, modularità usando Ansible.
 - Comprendere differenze tra programmazione imperativa e dichiarativa.
 - Esempi pratici e confronto con Python.
 - Preparare la base per corsi o testi didattici.
+
 ## Struttura
+
 - `docs/`: capitoli del tutorial in Markdown.
 - `examples/`: playbook e ruoli Ansible esemplificativi.
 - `requirements.txt`: dipendenze (es. Ansible).
+
 ## Prerequisiti
+
 - Python 3.8+
 - Ansible 2.10+
+
 ## Installazione
+
 ```bash
 pip install -r requirements.txt
 ````
+
 ## Esecuzione esempi
+
 ```bash
 ansible-playbook examples/variables.yml
 ```
+
 ## Contributi
+
 Benvenuti! Apri issue o pull request per suggerimenti o correzioni.
+
+---
+
 ## Licenza
+
 MIT License
+
 ```
 ## 2. `requirements.txt`
 ```
+
 ansible>=2.10
+
 ````
 ## 3. `docs/01_intro.md`
 ```markdown
 # Introduzione
+
 Questo tutorial usa Ansible per insegnare i concetti base della programmazione in modo dichiarativo.
+
 Cos'è la programmazione dichiarativa? Contrariamente alla programmazione imperativa, descrive il *cosa* fare, non il *come*.
+
 Ansible è uno strumento di automazione dichiarativo che permette di definire lo stato desiderato.
+
 Nei capitoli successivi vedremo come usare variabili, condizioni, cicli e modularità.
 ````
 ## 4. `docs/02_variabili.md`
 ````markdown
 # Variabili in Ansible
+
 Le variabili sono contenitori di valori. In Ansible sono usate per parametrizzare i playbook.
+
 Esempio:
+
 ```yaml
 vars:
   x: 10
   y: 20
   somma: "{{ x + y }}"
 ````
+
 Le variabili sono interpolate usando la sintassi `{{ }}`.
+
 In Python, l'equivalente sarebbe:
+
 ```python
 x = 10
 y = 20
 somma = x + y
 ```
+
 ````
 ## 5. `docs/03_condizioni.md`
 ```markdown
 # Condizioni (when)
+
 Le condizioni permettono di eseguire task solo se una condizione è vera.
+
 Esempio Ansible:
+
 ```yaml
 tasks:
   - name: Messaggio se x > 5
@@ -359,17 +434,23 @@ tasks:
       msg: "x è maggiore di 5"
     when: x > 5
 ````
+
 In Python:
+
 ```python
 if x > 5:
     print("x è maggiore di 5")
 ```
+
 ````
 ## 6. `docs/04_cicli.md`
 ```markdown
 # Cicli (loop)
+
 Ansible permette di iterare su liste con `loop`.
+
 Esempio:
+
 ```yaml
 tasks:
   - name: Saluta utenti
@@ -380,17 +461,23 @@ tasks:
       - Luca
       - Anna
 ````
+
 In Python:
+
 ```python
 for user in ["Mario", "Luca", "Anna"]:
     print(f"Ciao {user}")
 ```
+
 ````
 ## 7. `docs/05_modularita.md`
 ```markdown
 # Modularità con Ruoli
+
 I ruoli permettono di organizzare playbook complessi in moduli riutilizzabili.
+
 Struttura tipica di un ruolo:
+
 ````
 roles/
 └── saluto/
@@ -398,28 +485,36 @@ roles/
 │   └── main.yml
 └── README.md
 ````
+
 Esempio task:
+
 ```yaml
 - name: Saluto personalizzato
   debug:
     msg: "Ciao {{ nome }}"
 ````
+
 Il ruolo può essere incluso con:
+
 ```yaml
 roles:
   - role: saluto
     vars:
       nome: "Mario"
 ```
+
 ````
 ## 8. `examples/variables.yml`
 ```yaml
+---
 - hosts: localhost
   gather_facts: false
+
   vars:
     x: 10
     y: 20
     z: "{{ x + y }}"
+
   tasks:
     - name: Mostra il valore di z (x + y)
       debug:
@@ -427,15 +522,19 @@ roles:
 ````
 ## 9. `examples/conditions.yml`
 ```yaml
+---
 - hosts: localhost
   gather_facts: false
+
   vars:
     x: 10
+
   tasks:
     - name: Messaggio se x è maggiore di 5
       debug:
         msg: "x è maggiore di 5"
       when: x > 5
+
     - name: Messaggio se x è minore o uguale a 5
       debug:
         msg: "x è minore o uguale a 5"
@@ -443,13 +542,16 @@ roles:
 ```
 ## 10. `examples/loops.yml`
 ```yaml
+---
 - hosts: localhost
   gather_facts: false
+
   vars:
     users:
       - mario
       - luca
       - anna
+
   tasks:
     - name: Saluto per ogni utente nella lista
       debug:
@@ -458,23 +560,28 @@ roles:
 ```
 ## 11. `examples/roles/saluto/tasks/main.yml`
 ```yaml
+---
 - name: Saluta l'utente
   debug:
     msg: "Ciao {{ nome }}"
 ```
 ## 12. `examples/complete_example.yml`
 ```yaml
+---
 - hosts: localhost
   gather_facts: false
+
   vars:
     utenti:
       - mario
       - luca
       - anna
+
   roles:
     - role: saluto
       vars:
         nome: "default"
+
   tasks:
     - name: Saluta solo utenti con nome lungo > 3 caratteri
       include_role:
@@ -487,28 +594,33 @@ roles:
 ## 13. `LICENSE`
 ```text
 MIT License
+
 Copyright (c) 2025 [Tuo Nome]
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
+
 [...standard MIT text...]
 ```
 # Conclusione
 Questa è la base per un tutorial/manuale didattico focalizzato sull’apprendimento della programmazione dichiarativa con Ansible. Ogni file Markdown contiene spiegazioni e analogie col mondo imperativo (Python), mentre gli esempi `examples/` forniscono codice Ansible eseguibile.
-Se vuoi, posso continuare a creare i contenuti dettagliati per ogni capitolo o aiutarti a mettere insieme un sito web statico per la documentazione.
-Fammi sapere!
-Perfetto, procedo a creare i contenuti dettagliati per ciascun capitolo, mantenendo lo stile didattico, con esempi esplicativi e paragoni tra Ansible (dichiarativo) e Python (imperativo), così da far comprendere bene i concetti base della programmazione ma usando Ansible come linguaggio.
 # Capitolo 1: Introduzione
 ````markdown
 # Capitolo 1: Introduzione alla Programmazione Dichiarativa con Ansible
+
 ## Cos'è la Programmazione Dichiarativa?
+
 La programmazione si divide principalmente in due paradigmi:
+
 - **Imperativo:** Spieghi passo per passo *come* fare qualcosa.
 - **Dichiarativo:** Descrivi *cosa* vuoi ottenere, lasciando al sistema il compito di capire *come* farlo.
+
 ### Esempio Imperativo (Python):
+
 ```python
 # Calcolare la somma dei numeri da 1 a 10
 somma = 0
@@ -516,7 +628,9 @@ for i in range(1, 11):
     somma += i
 print(somma)
 ````
+
 ### Esempio Dichiarativo (Ansible):
+
 ```yaml
 - hosts: localhost
   gather_facts: no
@@ -525,18 +639,26 @@ print(somma)
       debug:
         msg: "{{ range(1,11) | sum }}"
 ```
+
 Qui in Ansible diciamo solo *cosa* vogliamo, cioè la somma dei numeri da 1 a 10, senza definire un ciclo esplicito.
+
 ## Perché imparare con Ansible?
+
 * È un linguaggio dichiarativo, ampiamente usato in automazione.
 * Permette di imparare concetti di programmazione in modo semplice.
 * La sintassi YAML è leggibile e pulita.
 * Offre strumenti per variabili, condizioni, cicli e modularità.
+
 ## Struttura di un Playbook Ansible
+
 Un playbook è un file YAML con:
+
 * **hosts:** target su cui eseguire
 * **tasks:** lista di attività da compiere
 * **vars:** variabili per personalizzare il comportamento
+
 Esempio base:
+
 ```yaml
 - hosts: localhost
   tasks:
@@ -544,19 +666,31 @@ Esempio base:
       debug:
         msg: "Ciao, mondo!"
 ```
+
+---
+
 ## Obiettivi del tutorial
+
 * Apprendere variabili, condizioni, cicli e moduli in modo dichiarativo.
 * Comprendere differenze tra imperativo e dichiarativo.
 * Costruire playbook modulabili e riutilizzabili.
 * Confrontare con esempi Python per facilitare l’apprendimento.
+
+---
+
 ````
 # Capitolo 2: Variabili
 ```markdown
 # Capitolo 2: Variabili in Ansible
+
 ## Cos'è una Variabile?
+
 Una variabile è un contenitore che memorizza un valore (numero, testo, lista, ecc.) che può cambiare.
+
 ## Definire Variabili
+
 In Ansible, si definiscono usando la sezione `vars:`:
+
 ```yaml
 vars:
   nome: "Mario"
@@ -565,20 +699,27 @@ vars:
     - calcio
     - musica
 ````
+
 ## Usare Variabili
+
 Si usano con la sintassi di interpolazione `{{ variabile }}`:
+
 ```yaml
 tasks:
   - name: Saluto personalizzato
     debug:
       msg: "Ciao {{ nome }}, hai {{ eta }} anni."
 ```
+
 ## Tipi di Variabili
+
 * Numeri (interi, float)
 * Stringhe
 * Liste
 * Dizionari
+
 ## Esempio Completo
+
 ```yaml
 - hosts: localhost
   gather_facts: no
@@ -599,7 +740,9 @@ tasks:
       debug:
         msg: "Il primo hobby è {{ hobbies[0] }}"
 ```
+
 ## Confronto con Python
+
 ```python
 nome = "Anna"
 eta = 25
@@ -608,16 +751,27 @@ print(f"Nome: {nome}")
 print(f"Hai {len(hobbies)} hobby")
 print(f"Il primo hobby è {hobbies[0]}")
 ```
+
+---
+
 ## Note
+
 * In Ansible le variabili sono *immutabili* nel contesto di un playbook.
 * Si possono sovrascrivere con variabili d'inventario, o da linea di comando.
+
+---
+
 ````
 # Capitolo 3: Condizioni
 ```markdown
 # Capitolo 3: Condizioni con `when`
+
 ## Perché servono le condizioni?
+
 Le condizioni permettono di eseguire certe azioni solo se una condizione è vera.
+
 ## Sintassi base
+
 ```yaml
 tasks:
   - name: Esegui solo se x è maggiore di 10
@@ -625,7 +779,9 @@ tasks:
       msg: "x è grande!"
     when: x > 10
 ````
+
 ## Esempio completo
+
 ```yaml
 - hosts: localhost
   gather_facts: no
@@ -641,10 +797,14 @@ tasks:
         msg: "x è 10 o meno"
       when: x <= 10
 ```
+
 ## Operatori supportati
+
 * `==`, `!=`, `>`, `<`, `>=`, `<=`
 * operatori logici: `and`, `or`, `not`
+
 ## Confronto Python
+
 ```python
 x = 15
 if x > 10:
@@ -652,15 +812,26 @@ if x > 10:
 else:
     print("x è 10 o meno")
 ```
+
+---
+
 ## Nota
+
 * In Ansible `when` è un filtro jinja2, quindi si possono usare espressioni complesse.
+
+---
+
 ````
 # Capitolo 4: Cicli
 ```markdown
 # Capitolo 4: Cicli con `loop`
+
 ## Cos'è un ciclo?
+
 Un ciclo ripete un’azione più volte, per ogni elemento di una lista o intervallo.
+
 ## Sintassi base con `loop`
+
 ```yaml
 tasks:
   - name: Saluta utenti
@@ -671,9 +842,13 @@ tasks:
       - Lucia
       - Anna
 ````
+
 ## Variabili nella lista
+
 La variabile `item` contiene l’elemento corrente.
+
 ## Esempio completo
+
 ```yaml
 - hosts: localhost
   gather_facts: no
@@ -688,8 +863,11 @@ La variabile `item` contiene l’elemento corrente.
         msg: "Ciao {{ item }}"
       loop: "{{ utenti }}"
 ```
+
 ## Loop con indici
+
 Per indici o range:
+
 ```yaml
 tasks:
   - name: Conta da 1 a 5
@@ -697,7 +875,9 @@ tasks:
       msg: "Numero {{ item }}"
     loop: "{{ range(1,6) | list }}"
 ```
+
 ## Confronto Python
+
 ```python
 utenti = ["mario", "lucia", "anna"]
 for utente in utenti:
@@ -705,16 +885,27 @@ for utente in utenti:
 for i in range(1,6):
     print(f"Numero {i}")
 ```
+
+---
+
 ## Nota
+
 * Loop in Ansible è più limitato rispetto a Python (no break, continue).
 * Puoi usare `loop_control` per modificare comportamento.
+
+---
+
 ````
 # Capitolo 5: Modularità
 ```markdown
 # Capitolo 5: Modularità con Ruoli
+
 ## Perché modularizzare?
+
 I ruoli aiutano a organizzare playbook complessi in parti riutilizzabili.
+
 ## Struttura di un ruolo
+
 ````
 roles/
 └── mio_ruolo/
@@ -724,21 +915,29 @@ roles/
 │   └── main.yml
 └── README.md
 ````
+
 ## Come usare un ruolo
+
 Nel playbook:
+
 ```yaml
 - hosts: localhost
   roles:
     - mio_ruolo
 ````
+
 ## Esempio ruolo `saluto`
+
 `roles/saluto/tasks/main.yml`:
+
 ```yaml
 - name: Saluto personalizzato
   debug:
     msg: "Ciao {{ nome }}"
 ```
+
 Playbook che usa il ruolo:
+
 ```yaml
 - hosts: localhost
   gather_facts: no
@@ -747,21 +946,38 @@ Playbook che usa il ruolo:
   roles:
     - saluto
 ```
+
 ## Vantaggi
+
 * Riutilizzo
 * Separazione di responsabilità
 * Facilità di manutenzione
+
+---
+
 ## Nota
+
 * Puoi passare variabili al ruolo in playbook o tramite `defaults/main.yml`.
+
+---
+
 ```
-Se vuoi, posso anche preparare i file Markdown con queste versioni dettagliate o generare ulteriori capitoli su argomenti come gestione errori, template Jinja, callback plugin, ecc.
-Fammi sapere!
 ```
+
+
+---
+---
+
 Perfetto, continuo con ulteriori capitoli approfonditi su:
+
 * Gestione errori e controllo del flusso
 * Template Jinja2 in Ansible
 * Callback plugin e personalizzazioni
+
+---
+
 # Capitolo 6: Gestione Errori e Controllo del Flusso
+
 ````markdown
 # Capitolo 6: Gestione Errori e Controllo del Flusso
 ## Perché gestire errori?
@@ -773,6 +989,7 @@ tasks:
   - name: Esegue un comando che potrebbe fallire
     command: /bin/false
     ignore_errors: yes
+
   - name: Task successivo che verrà eseguito comunque
     debug:
       msg: "Questo task verrà eseguito anche se il precedente fallisce"
@@ -793,9 +1010,11 @@ tasks:
   - block:
       - name: Task che potrebbe fallire
         command: /bin/false
+
       - name: Task successivo
         debug:
           msg: "Non eseguito se il precedente fallisce"
+
     rescue:
       - name: Gestione errore
         debug:
@@ -808,6 +1027,7 @@ tasks:
   - name: Esegue comando
     shell: /bin/false
     register: risultato
+
   - name: Esegue solo se il task precedente ha avuto successo
     debug:
       msg: "Successo!"
@@ -825,7 +1045,11 @@ except ZeroDivisionError:
 * Gestire bene gli errori è cruciale in automazione per non lasciare ambienti in stato incerto.
 * Usare `block` e `rescue` per mantenere playbook robusti e leggibili.
 ````
+
+---
+
 # Capitolo 7: Template Jinja2 in Ansible
+
 ```markdown
 # Capitolo 7: Template Jinja2 in Ansible
 ## Cos'è Jinja2?
@@ -834,15 +1058,19 @@ except ZeroDivisionError:
 Puoi creare file template con variabili da sostituire durante l’esecuzione.
 Esempio `template.conf.j2`:
 ````
+
 server {
 listen 80;
 server_name {{ hostname }};
+
 ```
 location / {
     proxy_pass http://{{ backend_ip }}:{{ backend_port }};
 }
 ```
+
 }
+
 ````
 ## Uso nel playbook
 ```yaml
@@ -861,6 +1089,7 @@ Esempio con filtro:
 ```yaml
 vars:
   nome: "Mario Rossi"
+
 tasks:
   - debug:
       msg: "Nome minuscolo: {{ nome | lower }}"
@@ -883,7 +1112,11 @@ print(f"Ciao {nome.lower()}")
 * Template sono utili per generare file di configurazione, script o documenti.
 * Usali per rendere i tuoi playbook più dinamici e flessibili.
 ````
+
+---
+
 # Capitolo 8: Callback Plugin e Personalizzazioni
+
 ```markdown
 # Capitolo 8: Callback Plugin e Personalizzazioni
 ## Cosa sono i callback plugin?
@@ -900,6 +1133,7 @@ Si scrive un file Python che definisce metodi come `v2_runner_on_ok` per gestire
 Esempio base:
 ```python
 from ansible.plugins.callback import CallbackBase
+
 class CallbackModule(CallbackBase):
     def v2_runner_on_ok(self, result):
         host = result._host
@@ -916,13 +1150,17 @@ Alcuni plugin modificano il formato d’output (ad esempio per pipeline CI/CD).
 * La creazione di callback plugin richiede Python e conoscenza Ansible internals.
 * Utile per progetti avanzati e personalizzati.
 ```
+
+---
+
 Se vuoi, posso proseguire creando esempi pratici, esercizi o capitoli avanzati (es. gestione inventario dinamico, sviluppo moduli personalizzati, ecc.).
+
 Fammi sapere!
 ```
-Perfetto! Procediamo con esempi pratici, esercizi, e poi approfondiamo con capitoli avanzati come gestione inventario dinamico e sviluppo di moduli personalizzati in Ansible.
 # Esempi Pratici e Esercizi
 ## Esempio pratico 1: Installare e configurare Nginx con template
 ```yaml
+---
 - name: Setup Nginx with template
   hosts: webservers
   vars:
@@ -933,11 +1171,13 @@ Perfetto! Procediamo con esempi pratici, esercizi, e poi approfondiamo con capit
         name: nginx
         state: present
       become: yes
+
     - name: Copy Nginx config template
       template:
         src: nginx.conf.j2
         dest: /etc/nginx/sites-available/default
       notify: restart nginx
+
   handlers:
     - name: restart nginx
       service:
@@ -957,6 +1197,7 @@ server {
 ## Esercizio 1: Scrivi un playbook che crea un utente con un gruppo specifico, usando variabili e condizioni.
 ## Esempio pratico 2: Gestione errori con block e rescue
 ```yaml
+---
 - name: Example error handling
   hosts: localhost
   tasks:
@@ -976,9 +1217,13 @@ server {
 ## Capitolo 9: Gestione Inventario Dinamico
 ````markdown
 # Capitolo 9: Gestione Inventario Dinamico
+
 ## Cos’è l’inventario dinamico?
+
 Invece di una lista statica di host, l’inventario può essere generato al volo da script, API o cloud provider.
+
 ## Esempio: Script inventario JSON
+
 ```bash
 #!/bin/bash
 cat <<EOF
@@ -990,27 +1235,45 @@ cat <<EOF
 }
 EOF
 ````
+
 Salva come `dynamic_inventory.sh`, rendilo eseguibile e usa:
+
 ```bash
 ansible-inventory -i dynamic_inventory.sh --list
 ```
+
 ## Cloud provider
+
 Ansible ha plugin ufficiali per inventari dinamici come AWS EC2, GCP, Azure, OpenStack.
+
 Configura un file YAML con le credenziali e usa il plugin.
+
 ## Vantaggi
+
 * Automatizza il reperimento degli host
 * Sempre aggiornato
 * Si integra con ambienti cloud e container
+
+---
+
 ## Nota
+
 * Il formato JSON o YAML è il più usato per l’output dello script
 * Gli script possono essere scritti in qualsiasi linguaggio
+
+---
+
 ````
 ## Capitolo 10: Sviluppo di Moduli Personalizzati
 ```markdown
 # Capitolo 10: Sviluppo di Moduli Personalizzati
+
 ## Perché sviluppare moduli?
+
 Quando i moduli ufficiali non soddisfano i requisiti, si può estendere Ansible con moduli custom.
+
 ## Struttura base di un modulo in Python
+
 ```python
 #!/usr/bin/python
 from ansible.module_utils.basic import AnsibleModule
@@ -1035,8 +1298,11 @@ def main():
 if __name__ == '__main__':
     main()
 ````
+
 ## Testare il modulo
+
 Salva il modulo in `library/my_module.py` e usalo così:
+
 ```yaml
 - hosts: localhost
   tasks:
@@ -1045,26 +1311,44 @@ Salva il modulo in `library/my_module.py` e usalo così:
         name: test
         state: present
 ```
+
 ## Best Practice
+
 * Supportare `check_mode` per idempotenza
 * Gestire errori con `module.fail_json()`
 * Documentare i parametri
+
+---
+
 ## Nota
+
 * Puoi scrivere moduli in Python, Bash o altri linguaggi, purché rispettino il protocollo di comunicazione JSON
+
+---
+
 ```
 # Posso proseguire con:
 - Capitolo 11: Gestione avanzata variabili e facts
 - Capitolo 12: Strategie di deployment avanzate
 - Esempi di playbook reali
 - Laboratori pratici con soluzioni
-Fammi sapere! Vuoi che approfondisca uno di questi o altro?
 ```
+
+
+---
+---
+
 Perfetto! Procedo con i capitoli successivi dettagliati su:
+
 * Gestione avanzata variabili e facts
 * Strategie di deployment avanzate
 * Esempi di playbook reali
 * Laboratori pratici con soluzioni
+
+---
+
 # Capitolo 11: Gestione avanzata variabili e facts
+
 ````markdown
 # Capitolo 11: Gestione avanzata variabili e facts
 ## Introduzione
@@ -1127,7 +1411,11 @@ Usa `set_fact` per definire variabili a runtime:
 1. Definisci un playbook che usa facts per eseguire task solo su host con sistema operativo Ubuntu.
 2. Usa `set_fact` per calcolare e passare un valore dinamico.
 ````
+
+---
+
 # Capitolo 12: Strategie di deployment avanzate
+
 ```markdown
 # Capitolo 12: Strategie di deployment avanzate
 ## Introduzione
@@ -1167,8 +1455,15 @@ Integra con Vault per cifrare segreti.
 1. Scrivi un playbook con strategia rolling update usando `serial`.
 2. Aggiungi gestione rollback con blocchi `block` e `rescue`.
 ````
+
+---
+
 # Esempi di Playbook Reali
+
+---
+
 ## Esempio: Setup di un server web completo
+
 ```yaml
 - name: Setup webserver completo
   hosts: webservers
@@ -1199,13 +1494,25 @@ Integra con Vault per cifrare segreti.
         name: nginx
         state: reloaded
 ````
+
+---
+
 # Laboratori Pratici con Soluzioni
+
+---
+
 ## Laboratorio 1: Installare e configurare un servizio
+
 **Obiettivo**: Scrivere un playbook che:
+
 * Installa Docker
 * Aggiunge utente al gruppo docker
 * Avvia un container nginx
+
+---
+
 ### Soluzione
+
 ```yaml
 - name: Install Docker e nginx container
   hosts: all
@@ -1241,11 +1548,27 @@ Integra con Vault per cifrare segreti.
         ports:
           - "80:80"
 ```
+
+---
+
 Se vuoi posso procedere con più laboratori, approfondimenti su callback plugin, template avanzati, oppure aiutarti a costruire esercizi personalizzati. Dimmi pure!
+
+
+---
+---
+
 Perfetto! Ti fornisco ora una serie di **laboratori pratici** aggiuntivi e **approfondimenti su callback plugin** e **template avanzati** in Ansible. Ogni sezione è ben commentata e pronta per essere integrata nel manuale che stiamo costruendo.
+
+---
+
 # Laboratori Pratici Aggiuntivi
+
+---
+
 ## Laboratorio 2: Gestione utenti e gruppi
+
 **Obiettivo:** Creare un playbook che aggiunge utenti con gruppi specifici, assegna password criptate e configura SSH.
+
 ```yaml
 - name: Gestione utenti e gruppi
   hosts: all
@@ -1291,8 +1614,13 @@ Perfetto! Ti fornisco ora una serie di **laboratori pratici** aggiuntivi e **app
         group: "{{ item.name }}"
       loop: "{{ users }}"
 ```
+
+---
+
 ## Laboratorio 3: Deploy di un’applicazione Python con virtualenv
+
 **Obiettivo:** Setup ambiente virtuale Python, installare dipendenze e avviare applicazione.
+
 ```yaml
 - name: Deploy app Python con virtualenv
   hosts: all
@@ -1328,15 +1656,31 @@ Perfetto! Ti fornisco ora una serie di **laboratori pratici** aggiuntivi e **app
       args:
         chdir: "{{ app_dir }}"
 ```
+
+---
+
 # Approfondimenti: Callback Plugin
+
+---
+
 ## Cosa sono i callback plugin?
+
 I callback plugin in Ansible sono moduli Python che intercettano gli eventi durante l’esecuzione di playbook e task. Permettono di personalizzare output, inviare notifiche, registrare dati, integrare sistemi esterni.
+
+---
+
 ## Uso pratico
+
 Per esempio, si può usare un callback plugin per:
+
 * Inviare notifiche Slack al completamento di un playbook
 * Salvare i log in un database esterno
 * Visualizzare output personalizzato in tempo reale
+
+---
+
 ## Esempio: Callback plugin base (in Python)
+
 ```python
 from ansible.plugins.callback import CallbackBase
 class CallbackModule(CallbackBase):
@@ -1349,23 +1693,43 @@ class CallbackModule(CallbackBase):
         task = result.task_name
         print(f"TASK FAILED on {host}: {task}")
 ```
+
+---
+
 ## Come usarlo?
+
 * Posiziona il file `.py` in una cartella `callback_plugins/` nel progetto
 * Setta la variabile d’ambiente `ANSIBLE_CALLBACK_PLUGINS` per puntare alla cartella
 * Esegui il playbook, il plugin verrà caricato automaticamente
+
+---
+
 # Approfondimenti: Template Jinja2 Avanzati
+
+---
+
 ## Uso base
+
 Ansible usa Jinja2 per generare contenuti dinamici, es. file di configurazione.
+
 ```yaml
 template:
   src: nginx.conf.j2
   dest: /etc/nginx/nginx.conf
 ```
+
+---
+
 ## Filtri utili
+
 * `{{ var | default('valore') }}` — valore di fallback
 * `{{ lista | join(', ') }}` — unisce lista con separatore
 * `{{ testo | upper }}` — maiuscole
+
+---
+
 ## Controlli di flusso
+
 ```jinja
 {% if ansible_os_family == "Debian" %}
   # Configurazione specifica Debian
@@ -1373,13 +1737,21 @@ template:
   # Altri OS
 {% endif %}
 ```
+
+---
+
 ## Cicli
+
 ```jinja
 {% for utente in users %}
 useradd {{ utente.name }}
 {% endfor %}
 ```
+
+---
+
 ## Esempio avanzato: template nginx
+
 ```jinja
 server {
   listen 80;
@@ -1394,49 +1766,99 @@ server {
   {% endif %}
 }
 ```
+
+---
+
 ## Esercizio
+
 Scrivi un template per un file di configurazione che gestisca dinamicamente più host backend in un load balancer Nginx.
+
+---
+
 Se vuoi, posso procedere con ulteriori laboratori su:
+
 * Gestione inventario dinamico
 * Scrittura moduli personalizzati
 * Integrazione con sistemi esterni via plugin
+
 Fammi sapere!
+
+
+---
+---
+
 Perfetto! Ti do un piano rapido per i prossimi passi, così continuiamo a costruire il manuale con laboratori avanzati e approfondimenti pratici:
+
+---
+
 ## Prossimi laboratori/pratiche
+
 1. **Gestione inventario dinamico**
    *Come usare script, plugin o API per popolare dinamicamente l’inventario di Ansible*
    — Con esempi su AWS EC2, DigitalOcean, o file JSON dinamici.
+
 2. **Scrittura moduli personalizzati**
    *Come estendere Ansible con moduli Python custom*
    — Spiegazione API moduli, gestione input/output, idempotenza.
+
 3. **Callback plugin avanzati**
    *Notifiche, logging esteso, integrazione con sistemi esterni*
    — Plugin per Slack, webhook, archiviazione DB.
+
 4. **Template avanzati e filtri Jinja2 personalizzati**
    *Creazione di filtri personalizzati, macro e blocchi*
    — Esempi pratici per gestire configurazioni complesse.
+
 5. **Gestione errori e strategie di retry**
    *Come gestire errori e fallback senza introdurre logica imperativa*
    — Uso di `ignore_errors`, `rescue`, `always`.
+
 6. **Integrazione con CI/CD (GitHub Actions, OpenTofu)**
    *Come integrare playbook in pipeline di automazione*
    — Esempi di workflow e best practice.
+
+---
+
 Se vuoi, posso partire con uno di questi o un mix, o generare i contenuti singoli e completi da subito. Dimmi pure!
+
+---
+
 Se vuoi, ti preparo anche una versione PDF o Markdown formattata con tutto il materiale finora, così hai una base documentale completa.
+
+---
+
 Fammi sapere come vuoi procedere! 😊
+
+
+---
+---
+
 Perfetto! Ti preparo un **mix introduttivo** che tocca i punti chiave di ciascuno di questi argomenti avanzati, con esempi pratici e consigli, e poi procedo a generare i contenuti singoli e completi per ogni capitolo.
+
+---
+
 # Introduzione ai moduli avanzati di Ansible con esempi pratici
+
+---
+
 ## 1. Gestione inventario dinamico
+
 **Concetto:**
 L’inventario di Ansible definisce i target su cui eseguire i playbook. Un inventario dinamico permette di avere una lista aggiornata automaticamente da fonti esterne come cloud provider o database.
+
 **Perché usarlo:**
+
 * Evita inventari statici, difficile da mantenere.
 * Sincronizza i server attivi in tempo reale.
+
 **Esempio:** inventario dinamico AWS EC2 con script Python o JSON:
+
 ```bash
 ansible-inventory -i ec2.py --list
 ```
+
 O con plugin nativo `aws_ec2`:
+
 ```yaml
 plugin: aws_ec2
 regions:
@@ -1444,10 +1866,16 @@ regions:
 filters:
   tag:Environment: production
 ```
+
+---
+
 ## 2. Sviluppo moduli personalizzati
+
 **Concetto:**
 I moduli sono i mattoni fondamentali di Ansible: ogni task chiama un modulo che compie un’azione idempotente. Quando serve qualcosa di specifico, si può scrivere un modulo Python personalizzato.
+
 **Struttura base di un modulo Python:**
+
 ```python
 #!/usr/bin/python
 from ansible.module_utils.basic import AnsibleModule
@@ -1472,10 +1900,16 @@ def main():
 if __name__ == '__main__':
     main()
 ```
+
+---
+
 ## 3. Callback plugin avanzati
+
 **Concetto:**
 I callback plugin permettono di intercettare eventi durante l’esecuzione di Ansible (es. task started, task finished), per log personalizzati o notifiche.
+
 **Esempio di callback per inviare notifiche Slack:**
+
 ```python
 from ansible.plugins.callback import CallbackBase
 class CallbackModule(CallbackBase):
@@ -1483,10 +1917,16 @@ class CallbackModule(CallbackBase):
         msg = f"Task {result.task_name} eseguito con successo su {result._host}"
         # codice per inviare a Slack via webhook
 ```
+
+---
+
 ## 4. Template avanzati e filtri Jinja2
+
 **Concetto:**
 Jinja2 è il motore di template usato da Ansible per interpolare variabili e logica di base in file di configurazione. È possibile creare filtri personalizzati per manipolare dati complessi.
+
 **Esempio filtro personalizzato:**
+
 ```python
 def reverse_string(value):
     return value[::-1]
@@ -1494,14 +1934,22 @@ class FilterModule(object):
     def filters(self):
         return {'reverse': reverse_string}
 ```
+
 Uso nel template:
+
 ```jinja
 {{ "ciao" | reverse }}  # "oaic"
 ```
+
+---
+
 ## 5. Gestione errori e retry
+
 **Concetto:**
 Ansible evita la logica imperativa, ma fornisce meccanismi per gestire errori e tentare retry in modo dichiarativo.
+
 **Esempio di retry in task:**
+
 ```yaml
 - name: Copia file con retry
   copy:
@@ -1512,7 +1960,9 @@ Ansible evita la logica imperativa, ma fornisce meccanismi per gestire errori e 
   until: result is succeeded
   register: result
 ```
+
 **Esempio di gestione errori con `block` e `rescue`:**
+
 ```yaml
 tasks:
   - block:
@@ -1523,10 +1973,16 @@ tasks:
         debug:
           msg: "Comando fallito, eseguo azione di fallback"
 ```
+
+---
+
 ## 6. Integrazione CI/CD (GitHub Actions / OpenTofu)
+
 **Concetto:**
 I playbook Ansible possono essere eseguiti automaticamente all’interno di pipeline di integrazione continua.
+
 **Esempio GitHub Actions snippet:**
+
 ```yaml
 jobs:
   deploy:
@@ -1538,18 +1994,40 @@ jobs:
         with:
           playbook: deploy.yml
 ```
+
+---
+
+---
+
 # Prossimo step: contenuti dettagliati
+
 Se vuoi, posso ora generarti uno ad uno i capitoli completi con:
+
 * Introduzione teorica
 * Spiegazioni tecniche dettagliate
 * Esempi pratici commentati
 * Esercizi e suggerimenti di approfondimento
+
 Dimmi pure quale capitolo preferisci come primo, o se vuoi che proceda in ordine!
+
+
+---
+---
+
 Perfetto! Procediamo con un **capitolo dettagliato sui Plugin in Ansible**, focalizzandoci in particolare sui **Callback Plugin**, ma con cenni anche agli altri tipi di plugin più comuni, come quelli per connection, lookup, filter, ecc.
+
+---
+
 # Capitolo: Plugin in Ansible — Focus su Callback Plugin e oltre
+
+---
+
 ## 1. Introduzione ai Plugin in Ansible
+
 Ansible è altamente estensibile grazie a un sistema di plugin, che permette di personalizzare e estendere il comportamento di Ansible durante l’esecuzione dei playbook.
+
 ### Tipologie principali di plugin:
+
 | Tipo plugin    | Descrizione                                                                                    | Esempio uso                               |
 | -------------- | ---------------------------------------------------------------------------------------------- | ----------------------------------------- |
 | **Callback**   | Reagisce a eventi runtime (task started, finished, error) per logging, notifiche, statistiche. | Notifica Slack, output personalizzato.    |
@@ -1558,21 +2036,36 @@ Ansible è altamente estensibile grazie a un sistema di plugin, che permette di 
 | **Filter**     | Funzioni per manipolare dati in Jinja2 templates.                                              | Custom filter per trasformazioni stringa. |
 | **Strategy**   | Controlla come vengono eseguiti i task (parallelismo, serializzazione).                        | Linear, Free strategy.                    |
 | **Action**     | Definisce il comportamento di un modulo durante l’esecuzione.                                  | Moduli personalizzati avanzati.           |
+
+---
+
 ## 2. Focus: Callback Plugin
+
 ### 2.1 Cosa sono i Callback Plugin?
+
 I callback plugin intercettano eventi che Ansible genera durante l’esecuzione di un playbook. Possono modificare o estendere:
+
 * L’output a video o su file (logging)
 * Invio notifiche (Slack, email)
 * Invio metriche a sistemi di monitoring
 * Azioni custom post-task o post-playbook
+
 ### 2.2 Dove si trovano i callback plugin?
+
 Nel codice Ansible, di solito in `/usr/lib/python3.x/site-packages/ansible/plugins/callback/`
+
 Possono anche essere scritti e usati localmente in:
+
 ```
 ./callback_plugins/
 ```
+
+---
+
 ## 3. Come scrivere un Callback Plugin personalizzato
+
 ### 3.1 Struttura minima di un callback plugin
+
 ```python
 from ansible.plugins.callback import CallbackBase
 class CallbackModule(CallbackBase):
@@ -1587,7 +2080,9 @@ class CallbackModule(CallbackBase):
         task = result.task_name
         print(f"[FAIL] Task '{task}' fallito su {host}")
 ```
+
 ### 3.2 Eventi utili da intercettare (metodi comuni)
+
 | Metodo                 | Descrizione                         |
 | ---------------------- | ----------------------------------- |
 | `v2_playbook_on_start` | Quando inizia un playbook           |
@@ -1595,7 +2090,11 @@ class CallbackModule(CallbackBase):
 | `v2_runner_on_failed`  | Quando un task fallisce             |
 | `v2_runner_on_skipped` | Quando un task è saltato            |
 | `v2_playbook_on_stats` | Quando il playbook termina          |
+
+---
+
 ## 4. Esempio pratico: Callback per inviare notifiche Slack
+
 ```python
 import requests
 from ansible.plugins.callback import CallbackBase
@@ -1623,15 +2122,24 @@ class CallbackModule(CallbackBase):
         except Exception as e:
             self._display.warning(f"Errore invio Slack: {e}")
 ```
+
+---
+
 ## 5. Installazione e attivazione del plugin
+
 1. Copiare il file `slack_notify.py` nella cartella `callback_plugins` nella root del progetto Ansible.
 2. Configurare Ansible per usarlo modificando `ansible.cfg`:
+
 ```ini
 [defaults]
 callback_plugins = ./callback_plugins
 stdout_callback = slack_notify
 ```
+
+---
+
 ## 6. Esempio avanzato: Callback plugin con logging su file
+
 ```python
 from ansible.plugins.callback import CallbackBase
 import logging
@@ -1652,17 +2160,37 @@ class CallbackModule(CallbackBase):
         task = result.task_name
         logging.error(f"[FAIL] Task '{task}' fallito su {host}")
 ```
+
+---
+
 ## 7. Altri plugin: brevi cenni
+
 * **Filter plugin:** si creano estensioni di filtri Jinja2 per manipolare dati.
 * **Lookup plugin:** per caricare dati da fonti esterne.
 * **Connection plugin:** per definire nuovi metodi di connessione, es. custom ssh o API.
+
+---
+
 ## 8. Esercizi consigliati
+
 * Scrivi un callback plugin che invii notifiche via email in caso di fallimento.
 * Implementa un filter plugin che converta tutte le stringhe in maiuscolo.
 * Prova a creare un lookup plugin che legga variabili da un file JSON esterno.
+
+---
+
 Se vuoi, posso ora generarti il file completo di esempio (ad es. `callback_plugins/slack_notify.py`) con commenti riga per riga, o passare a un altro tipo di plugin.
+
 Fammi sapere!
+
+
+---
+---
+
 Eccoti il file completo di esempio per un **Callback Plugin Ansible** che invia notifiche a Slack in caso di task riusciti o falliti.
+
+---
+
 ```python
 # callback_plugins/slack_notify.py
 """
@@ -1721,16 +2249,33 @@ class CallbackModule(CallbackBase):
             # Usa il display interno di Ansible per mostrare warning in caso di errori
             self._display.warning(f"Errore nell'invio notifica Slack: {e}")
 ```
+
+---
+
 **Come funziona:**
+
 * `CallbackModule` è la classe che Ansible carica come plugin.
 * `v2_runner_on_ok` e `v2_runner_on_failed` intercettano rispettivamente eventi di successo e fallimento dei task.
 * Il messaggio formattato viene inviato al webhook Slack.
 * In caso di errore di rete, viene mostrato un warning.
+
+---
+
 Se vuoi posso aiutarti a creare anche una versione che manda notifiche su altri canali o più funzionale! Vuoi?
+
+
+---
+---
+
 Perfetto! Ti fornisco ora esempi completi e commentati per i tre tipi di plugin Ansible che hai citato:
+
+---
+
 # 1. Filter Plugin
+
 Estende i filtri Jinja2 usati nei template o playbook.
 Esempio: un filtro che converte una stringa in camelCase.
+
 ```python
 # filter_plugins/camelcase.py
 """
@@ -1755,9 +2300,14 @@ class FilterModule(object):
         capitalized = [w.capitalize() for w in words[1:]]
         return first_word + ''.join(capitalized)
 ```
+
+---
+
 # 2. Lookup Plugin
+
 Carica dati da una fonte esterna.
 Esempio: lookup che legge un file JSON remoto via HTTP.
+
 ```python
 # lookup_plugins/httpjson.py
 """
@@ -1780,9 +2330,14 @@ class LookupModule(LookupBase):
         except Exception as e:
             raise AnsibleError(f"Errore nel caricamento JSON da {url}: {e}")
 ```
+
+---
+
 # 3. Connection Plugin
+
 Definisce un nuovo metodo di connessione.
 Esempio: connessione via API REST (fittizia e semplificata).
+
 ```python
 # connection_plugins/restapi.py
 """
@@ -1829,38 +2384,66 @@ class Connection(ConnectionBase):
             self.session.close()
             self.session = None
 ```
+
+---
+
 # Come usarli?
+
 * **Filter plugin**: salvalo in `filter_plugins/`, poi in playbook:
+
 ```yaml
 - debug:
     msg: "{{ 'ciao mondo' | camelcase }}"
 ```
+
 * **Lookup plugin**: salvalo in `lookup_plugins/`, poi in playbook:
+
 ```yaml
 - debug:
     msg: "{{ lookup('httpjson', 'https://jsonplaceholder.typicode.com/todos/1') }}"
 ```
+
 * **Connection plugin**: salvalo in `connection_plugins/`, e in inventory:
+
 ```ini
 [targethost]
 api.example.com ansible_connection=restapi ansible_remote_addr=https://api.example.com
 ```
+
+---
+
 Se vuoi, posso aiutarti a generare altri plugin avanzati o tutorial dettagliati sull'uso e lo sviluppo di plugin Ansible!
+
+
+---
+---
+
 Ottima domanda! Capire la differenza tra **moduli personalizzati** e **plugin** in Ansible è fondamentale per usare al meglio l’estensibilità del sistema.
+
+---
+
 ## 1. **Moduli personalizzati**
+
 ### Cos’è un modulo?
+
 * È **l’unità base di lavoro in Ansible**: un piccolo script (in Python o altro) che esegue un’azione specifica (es. installare un pacchetto, copiare un file, creare un utente).
 * Viene **invocato direttamente dal playbook** come task.
 * Il modulo prende in input parametri, esegue operazioni e restituisce uno stato (changed, failed, output, ecc.).
+
 ### Quando si usano?
+
 * Quando vuoi **definire una nuova azione o gestione risorse** che Ansible non supporta nativamente.
 * Per esempio, se vuoi interagire con un’API proprietaria, un servizio custom, o gestire risorse non standard.
+
 ### Caratteristiche
+
 * Autonomo e riutilizzabile.
 * Funziona sia in locale che su host remoti.
 * Deve essere idempotente: ripetere il modulo non deve creare effetti collaterali.
 * Scrittura tipicamente in Python (ma può essere anche in bash, powershell, ecc.).
+
 ### Esempio minimo di modulo Python
+
 ```python
 #!/usr/bin/python
 from ansible.module_utils.basic import AnsibleModule
@@ -1884,11 +2467,17 @@ def main():
 if __name__ == '__main__':
     main()
 ```
+
+---
+
 ## 2. **Plugin Ansible**
+
 ### Cos’è un plugin?
+
 * È un **componente estensibile** che modifica o estende il comportamento interno di Ansible.
 * Non è un task/azione, ma più una **funzionalità di supporto o hook**.
 * Tipologie di plugin comuni:
+
   * **Callback plugin** (es. logging, notifica eventi)
   * **Filter plugin** (filtri Jinja2 personalizzati)
   * **Lookup plugin** (caricamento dati esterni)
@@ -1896,15 +2485,21 @@ if __name__ == '__main__':
   * **Strategy plugin** (gestione esecuzione task)
   * **Inventory plugin** (gestione inventari dinamici)
   * **Action plugin** (modifica esecuzione moduli)
+
 ### Quando si usano?
+
 * Per **personalizzare l’ambiente di esecuzione di Ansible**, aggiungere funzionalità cross-cutting.
 * Quando vuoi modificare il comportamento di Ansible a livello di esecuzione, gestione output, o estendere la sintassi.
+
 ### Caratteristiche
+
 * Integrati nel core Ansible.
 * Più specifici rispetto ai moduli.
 * Scritti in Python.
 * Possono influenzare il modo in cui Ansible interpreta i playbook o interagisce con gli host.
+
 ### Esempio semplice di callback plugin
+
 ```python
 # callback_plugins/simple_log.py
 from ansible.plugins.callback import CallbackBase
@@ -1914,7 +2509,11 @@ class CallbackModule(CallbackBase):
         task = result.task_name
         print(f"TASK OK - {host}: {task}")
 ```
+
+---
+
 ## 3. **Confronto diretto**
+
 | Aspetto            | Moduli personalizzati                     | Plugin Ansible                                        |
 | ------------------ | ----------------------------------------- | ----------------------------------------------------- |
 | Scopo              | Eseguire task specifici                   | Estendere o modificare il comportamento di Ansible    |
@@ -1924,14 +2523,34 @@ class CallbackModule(CallbackBase):
 | Idempotenza        | Necessaria                                | Non applicabile (dipende dal tipo)                    |
 | Esempi             | Installare pacchetti, creare utenti       | Logger, filtri jinja, gestione connessioni            |
 | Linguaggio         | Python (o altri)                          | Python                                                |
+
+---
+
 ## 4. **Sintesi**
+
 * Se vuoi **creare nuove azioni** (come installare un software, modificare configurazioni, chiamare API) → **moduli personalizzati**.
 * Se vuoi **estendere il motore Ansible** (filtrare dati, personalizzare output, definire nuovi modi di connessione) → **plugin**.
+
+---
+
 Se vuoi, posso aiutarti a scrivere esempi più complessi per entrambi, o spiegarti come integrarli in un workflow dichiarativo Ansible. Vuoi procedere?
+
+
+---
+---
+
 Perfetto! Procediamo con esempi e approfondimenti pratici su **moduli personalizzati** e **plugin Ansible**, per capire come realizzarli e integrarli nei tuoi playbook.
+
+---
+
 # 1. Moduli personalizzati: esempio completo e commentato
+
 Supponiamo tu voglia creare un modulo che gestisca una “risorsa fittizia” chiamata `my_resource`, con parametri `name` e `state` (come nell’esempio base).
+
+---
+
 ### File: `library/my_resource.py`
+
 ```python
 #!/usr/bin/python
 from ansible.module_utils.basic import AnsibleModule
@@ -1969,7 +2588,11 @@ def main():
 if __name__ == '__main__':
     main()
 ```
+
+---
+
 ### Come usare il modulo nel playbook:
+
 ```yaml
 - hosts: localhost
   tasks:
@@ -1978,8 +2601,15 @@ if __name__ == '__main__':
         name: "esempio1"
         state: present
 ```
+
+---
+
 # 2. Plugin callback: esempio base di logging task
+
+---
+
 ### File: `callback_plugins/simple_logger.py`
+
 ```python
 from ansible.plugins.callback import CallbackBase
 class CallbackModule(CallbackBase):
@@ -1994,12 +2624,23 @@ class CallbackModule(CallbackBase):
         task = result.task_name
         print(f"[INFO] TASK OK su {host}: {task}")
 ```
+
+---
+
 ### Come usarlo:
+
 * Posiziona il file nella cartella `callback_plugins/` del progetto.
 * Esegui Ansible con il flag `-v` o imposta la variabile d’ambiente `ANSIBLE_CALLBACK_PLUGINS` per includere la cartella.
 * Vedrai messaggi personalizzati per ogni task completato con successo.
+
+---
+
 # 3. Filter plugin: esempio di filtro personalizzato per manipolare stringhe
+
+---
+
 ### File: `filter_plugins/my_filters.py`
+
 ```python
 def shout(text):
     """
@@ -2012,13 +2653,24 @@ class FilterModule(object):
             'shout': shout
         }
 ```
+
+---
+
 ### Esempio d’uso in un template Jinja2
+
 ```jinja
 Messaggio: {{ "ciao mondo" | shout }}
 # Risultato: CIAO MONDO!!!
 ```
+
+---
+
 # 4. Lookup plugin: esempio base per leggere dati da file esterno
+
+---
+
 ### File: `lookup_plugins/my_lookup.py`
+
 ```python
 from ansible.plugins.lookup import LookupBase
 class LookupModule(LookupBase):
@@ -2028,7 +2680,11 @@ class LookupModule(LookupBase):
             content = f.read()
         return [content]
 ```
+
+---
+
 ### Uso nel playbook
+
 ```yaml
 - hosts: localhost
   tasks:
@@ -2036,24 +2692,50 @@ class LookupModule(LookupBase):
       debug:
         msg: "{{ lookup('my_lookup', 'file.txt') }}"
 ```
+
+---
+
 # 5. Connection plugin: esempio base (più avanzato, opzionale)
+
+---
+
 Definire un connection plugin è più complesso (gestione SSH, API, ecc.) e dipende dal caso d’uso specifico. Posso fornirti un esempio su richiesta.
+
+---
+
 # 6. Sintesi e suggerimenti
+
 * **Moduli personalizzati**: usali per azioni, manipolazioni o interazioni con sistemi/risorse.
 * **Plugin**: servono per estendere il funzionamento di Ansible (logging, filtri, lookup dati, connessioni personalizzate).
 * Mantieni sempre il principio di **idempotenza** e **chiamata chiara** da playbook.
 * Usa la struttura di directory standard (es. `library/`, `callback_plugins/`, `filter_plugins/`, `lookup_plugins/`) per facilitare l’organizzazione e il caricamento automatico.
+
+---
+
 Se vuoi, ti posso aiutare a costruire un mini progetto che integri moduli e plugin con esempi pratici, playbook e test. Vuoi procedere?
+
+
+---
+---
+
+
 Perfetto! Procediamo con un mini progetto demo che integra:
+
 * **Modulo personalizzato** (`library/my_resource.py`)
 * **Plugin callback** (`callback_plugins/simple_logger.py`)
 * **Plugin filtro** (`filter_plugins/my_filters.py`)
 * **Plugin lookup** (`lookup_plugins/my_lookup.py`)
+
 Includiamo inoltre:
+
 * Un **playbook di esempio** che usa tutte queste estensioni
 * Una breve **documentazione** inline
 * Struttura directory standard
+
+---
+
 # Struttura progetto
+
 ```
 ansible-declarative-demo/
 ├── library/
@@ -2067,7 +2749,11 @@ ansible-declarative-demo/
 ├── playbook.yml
 └── README.md
 ```
+
+---
+
 # 1. `library/my_resource.py`
+
 ```python
 #!/usr/bin/python
 from ansible.module_utils.basic import AnsibleModule
@@ -2099,7 +2785,11 @@ def main():
 if __name__ == '__main__':
     main()
 ```
+
+---
+
 # 2. `callback_plugins/simple_logger.py`
+
 ```python
 from ansible.plugins.callback import CallbackBase
 class CallbackModule(CallbackBase):
@@ -2111,7 +2801,11 @@ class CallbackModule(CallbackBase):
         task = result.task_name
         print(f"[INFO] TASK OK su {host}: {task}")
 ```
+
+---
+
 # 3. `filter_plugins/my_filters.py`
+
 ```python
 def shout(text):
     return text.upper() + "!!!"
@@ -2121,7 +2815,11 @@ class FilterModule(object):
             'shout': shout
         }
 ```
+
+---
+
 # 4. `lookup_plugins/my_lookup.py`
+
 ```python
 from ansible.plugins.lookup import LookupBase
 class LookupModule(LookupBase):
@@ -2131,7 +2829,11 @@ class LookupModule(LookupBase):
             content = f.read()
         return [content]
 ```
+
+---
+
 # 5. `playbook.yml`
+
 ```yaml
 - hosts: localhost
   gather_facts: no
@@ -2149,7 +2851,11 @@ class LookupModule(LookupBase):
       debug:
         msg: "{{ lookup('my_lookup', 'demo.txt') }}"
 ```
+
+---
+
 # 6. `README.md`
+
 ````markdown
 # Ansible Declarative Demo
 ## Obiettivi
@@ -2182,10 +2888,12 @@ class LookupModule(LookupBase):
   * `lookup_plugins/` per lookup
 * Mantieni questa struttura per il corretto caricamento.
 ```
+
+---
+
 Se vuoi posso aiutarti a creare una serie di esercizi e spiegazioni dettagliate sul funzionamento di ciascuno di questi componenti, oppure estendere con plugin connection o moduli più complessi.  
 Fammi sapere!
 ```
-Perfetto! Procediamo con una mini-guida didattica che ti accompagna passo-passo a capire e sperimentare con i vari plugin e moduli personalizzati Ansible.
 # Guida didattica: Estendere Ansible con moduli e plugin personalizzati
 ## Capitolo 1: Introduzione al progetto e setup
 ### Obiettivo
@@ -2252,5 +2960,4 @@ Sviluppa un callback plugin che registra eventi in un file di log JSON struttura
 Costruisci un filtro che formatta date in formati ISO o personalizzati.
 ### Esercizio 4
 Implementa un lookup plugin che interroga un’API REST e restituisce dati.
-Se vuoi, posso procedere a scrivere i contenuti dettagliati di ogni capitolo, includendo snippet di codice, spiegazioni passo-passo e soluzioni agli esercizi.
 Dimmi come preferisci!

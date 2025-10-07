@@ -33,8 +33,11 @@ project-root/
 # File: README.md
 ````markdown
 # Multi-Platform Multimedia Hosting & Dynamic Site Starter
+
 ## Obiettivi del progetto
+
 Questo progetto dimostra un setup completo, gratuito e scalabile per un sito web moderno con contenuti multimediali pesanti e funzionalità dinamiche. Integra le seguenti tecnologie:
+
 - Hosting di file multimediali pesanti (video, audio, immagini) su **Archive.org**
 - Frontend statico e versionato su **GitHub Pages** (build e deploy tramite GitHub Actions)
 - Hosting sito web moderno, veloce e con dominio personalizzato tramite **Cloudflare Pages** + **Cloudflare Workers**
@@ -42,13 +45,18 @@ Questo progetto dimostra un setup completo, gratuito e scalabile per un sito web
   - **Supabase**: database relazionale PostgreSQL, autenticazione e realtime
   - **FaunaDB**: database serverless globale con API GraphQL
 - Proxy per media tramite Cloudflare Workers per URL più pulite, caching e CORS
+
 ## Contesto e finalità
+
 Spesso i creatori di contenuti e sviluppatori web incontrano limiti nel pubblicare file multimediali pesanti senza costi elevati o vincoli tecnici. Questo progetto unisce strumenti gratuiti, potenti e complementari per creare un ecosistema ottimizzato, facilmente scalabile e adattabile a vari scenari:
+
 - Portfolio con video e immagini pesanti
 - App con autenticazione e dati dinamici
 - Sito con API serverless globali
 - Proxy media per migliorare esperienza utente
+
 ## Tecnologie utilizzate
+
 | Tecnologia        | Ruolo principale                                              |
 |-------------------|---------------------------------------------------------------|
 | **Archive.org**   | Hosting file multimediali pesanti                             |
@@ -59,24 +67,36 @@ Spesso i creatori di contenuti e sviluppatori web incontrano limiti nel pubblica
 | **FaunaDB**       | Database serverless globale con API GraphQL                    |
 | **React**         | Frontend moderno con componenti interattivi                    |
 | **Node.js**       | Script di automazione (upload file su Archive.org)             |
+
+---
+
 ## Istruzioni
+
 ### 1. Prerequisiti
+
 - Node.js (v16+ consigliato)
 - Account GitHub e repo creato
 - Account Cloudflare con dominio configurato (opzionale, si può usare sottodominio Cloudflare)
 - Account Supabase e FaunaDB con progetti creati
 - Account Archive.org per upload multimediali
+
 ### 2. Clona il progetto
+
 ```bash
 git clone https://github.com/tuoutente/tuorepo.git
 cd tuorepo
 ````
+
 ### 3. Configura variabili ambiente
+
 Copia `.env.example` in `.env` e inserisci i tuoi dati:
+
 ```bash
 cp .env.example .env
 ```
+
 Modifica `.env`:
+
 ```env
 VITE_SUPABASE_URL=your_supabase_url
 VITE_SUPABASE_ANON_KEY=your_supabase_anon_key
@@ -86,27 +106,42 @@ ARCHIVE_PASSWORD=your_archive_org_password
 CLOUDFLARE_ACCOUNT_ID=your_cloudflare_account_id
 CLOUDFLARE_API_TOKEN=your_cloudflare_api_token
 ```
+
 ### 4. Installa dipendenze e avvia sviluppo
+
 ```bash
 npm install
 npm run dev
 ```
+
 Visita `http://localhost:5173` per vedere il sito in sviluppo.
+
 ### 5. Deploy su Cloudflare Pages
+
 * Collega il repo GitHub a Cloudflare Pages
 * Configura build command: `npm run build`
 * Configura directory di output: `dist`
 * Attiva Workers per proxy media (configurazione nel file `src/workers/media-proxy-worker.js`)
+
 ### 6. Carica file multimediali su Archive.org
+
 Utilizza lo script `scripts/uploadToArchive.js`:
+
 ```bash
 node scripts/uploadToArchive.js path/to/your/mediafile.mp4
 ```
+
 Lo script utilizza le tue credenziali Archive.org per caricare e restituire l’URL pubblico.
+
 ### 7. Uso delle API
+
 * Supabase è pronto per autenticazione e dati relazionali (vedi `src/api/supabaseClient.js`)
 * FaunaDB è configurato per query GraphQL (vedi `src/api/faunaClient.js`)
+
+---
+
 ## Struttura del progetto
+
 ```
 .
 ├── README.md               # Questa documentazione
@@ -126,23 +161,39 @@ Lo script utilizza le tue credenziali Archive.org per caricare e restituire l’
 ├── examples/               # Esempi di utilizzo API
 └── tests/                  # Test unitari per API
 ```
+
+---
+
 ## Licenza
+
 Questo progetto è rilasciato sotto la licenza **MIT**. Consulta il file `LICENSE` per maggiori dettagli.
+
+---
+
 ## Contatti
+
 Per domande o contributi, apri issue o PR sul repository GitHub.
+
+---
+
 # Fine README.md
+
 ````
 # File: LICENSE
 ```text
 MIT License
+
 Copyright (c) 2025
+
 Permission is hereby granted, free of charge, to any person obtaining a copy
 of this software and associated documentation files (the "Software"), to deal
 in the Software without restriction, including without limitation the rights
 to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
 copies of the Software, and to permit persons to whom the Software is
 furnished to do so, subject to the following conditions:
+
 [... standard MIT text ...]
+
 THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
 IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
 FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
@@ -161,13 +212,16 @@ dist/
 .DS_Store
 coverage/
 *.log
+
 # Logs
 npm-debug.log*
 yarn-debug.log*
 yarn-error.log*
+
 # Build output
 dist/
 build/
+
 # Local env files
 .env.local
 .env.development.local
@@ -179,11 +233,14 @@ build/
 # Supabase
 VITE_SUPABASE_URL=https://your-supabase-url.supabase.co
 VITE_SUPABASE_ANON_KEY=your-anon-public-key
+
 # FaunaDB
 VITE_FAUNA_SECRET=your-fauna-secret-key
+
 # Archive.org
 ARCHIVE_USERNAME=your-archive-org-username
 ARCHIVE_PASSWORD=your-archive-org-password
+
 # Cloudflare
 CLOUDFLARE_ACCOUNT_ID=your-cloudflare-account-id
 CLOUDFLARE_API_TOKEN=your-cloudflare-api-token
@@ -235,6 +292,7 @@ import React from "react";
 import ReactDOM from "react-dom/client";
 import App from "./App.jsx";
 import "./styles.css";
+
 ReactDOM.createRoot(document.getElementById("root")).render(<App />);
 ```
 # File: src/App.jsx
@@ -245,22 +303,27 @@ import faunaClient from "./api/faunaClient";
 import MediaPlayer from "./components/MediaPlayer.jsx";
 import Login from "./components/Login.jsx";
 import UserProfile from "./components/UserProfile.jsx";
+
 function App() {
   const [user, setUser] = useState(null);
   const [mediaUrl, setMediaUrl] = useState(
     "https://archive.org/download/your_identifier/sample-video.mp4"
   );
+
   useEffect(() => {
     // Check auth session on mount
     const session = supabase.auth.getSession().then(({ data }) => {
       setUser(data.session?.user || null);
     });
+
     // Listen to auth state changes
     const { data: listener } = supabase.auth.onAuthStateChange((_event, session) => {
       setUser(session?.user || null);
     });
+
     return () => listener.subscription.unsubscribe();
   }, []);
+
   // Example FaunaDB query on button click
   const fetchFaunaData = async () => {
     try {
@@ -281,9 +344,11 @@ function App() {
       console.error("FaunaDB query error:", error);
     }
   };
+
   return (
     <div className="app-container">
       <h1>Multimedia Dynamic Site</h1>
+
       {!user ? (
         <Login />
       ) : (
@@ -299,27 +364,34 @@ function App() {
     </div>
   );
 }
+
 export default App;
 ```
 # File: src/api/supabaseClient.js
 ```js
 import { createClient } from "@supabase/supabase-js";
+
 const supabaseUrl = import.meta.env.VITE_SUPABASE_URL;
 const supabaseAnonKey = import.meta.env.VITE_SUPABASE_ANON_KEY;
+
 const supabase = createClient(supabaseUrl, supabaseAnonKey);
+
 export default supabase;
 ```
 # File: src/api/faunaClient.js
 ```js
 import faunadb from "faunadb";
+
 const client = new faunadb.Client({
   secret: import.meta.env.VITE_FAUNA_SECRET,
 });
+
 export default client;
 ```
 # File: src/components/MediaPlayer.jsx
 ```jsx
 import React from "react";
+
 export default function MediaPlayer({ src }) {
   return (
     <video controls width="640" poster="">
@@ -333,13 +405,12 @@ export default function MediaPlayer({ src }) {
 ```jsx
 import React, { useState } from "react";
 import supabase from "../api/supabaseClient";
+
 export default function Login() {
   const [email, set
 ```
 ///
 \\\
-Perfetto! 🎉
-Ecco il progetto completo, coeso e pronto per essere pubblicato su GitHub. Puoi copiarlo e incollarlo in una cartella locale, inizializzare un repository Git, e fare push su GitHub.
 # 🗂️ STRUTTURA DEL PROGETTO
 ```
 multi-platform-static-dynamic-site/
@@ -379,18 +450,24 @@ multi-platform-static-dynamic-site/
 # 📄 `README.md`
 ````markdown
 # 🌐 Multi-Platform Static/Dynamic Site (Free Stack Edition)
+
 Un progetto web completamente gratuito che integra:
+
 - **Hosting statico con funzionalità dinamiche**  
 - **Database relazionale e serverless**  
 - **Proxying multimediale e CDN**  
 - **Storage permanente per media pesanti**
+
 ## 🎯 Obiettivi
+
 - Creare un sito statico + dinamico sfruttando solo servizi **gratuiti**
 - Usare **Supabase** per autenticazione, database relazionale e realtime
 - Usare **FaunaDB** per API serverless e query distribuite (GraphQL/FQL)
 - Servire **media pesanti** da Archive.org (video, zip, immagini)
 - Usare **GitHub + Cloudflare Pages** per hosting statico moderno con dominio personalizzato e HTTPS
+
 ## 🧩 Stack Tecnologico
+
 | Componente    | Tecnologia      | Funzione                                   |
 |---------------|-----------------|--------------------------------------------|
 | Frontend      | HTML/CSS/JS     | Sito statico responsivo                    |
@@ -399,49 +476,78 @@ Un progetto web completamente gratuito che integra:
 | Backend 2     | FaunaDB         | GraphQL/FQL API serverless                 |
 | Media hosting | Archive.org     | File video/audio/zip di grandi dimensioni  |
 | Proxy         | Cloudflare Workers | Media rewrite e gestione CORS         |
+
 ## 📦 Installazione
+
 1. **Clona il progetto**
    ```bash
    git clone https://github.com/tuo-utente/multi-platform-static-dynamic-site.git
    cd multi-platform-static-dynamic-site
 ````
+
 2. **Installa dipendenze**
+
    ```bash
    npm install
    pip install -r requirements.txt
    ```
+
 3. **Configura l'ambiente**
    Copia `.env.example` in `.env` e inserisci le chiavi:
+
    ```bash
    cp .env.example .env
    ```
+
 4. **Configura Cloudflare Pages**
+
    * Collega il repo a Cloudflare Pages
    * Imposta cartella build su `public`
    * Imposta le Pages Functions da `functions/`
+
 5. **(Opzionale) Carica media su Archive.org**
+
    ```bash
    bash scripts/upload_to_archive.sh video.mp4
    ```
+
 6. **Deploy GitHub Actions**
+
    * Il file `workflows/deploy.yml` gestisce:
+
      * Build
      * Deploy su Cloudflare
      * Upload snapshot su Archive.org
+
 ## 🚀 Distribuzione
+
 Il progetto si distribuisce tramite GitHub → Cloudflare Pages → dominio HTTPS automatico.
+
+---
+
 ## 🧪 Test
+
 * Run test Supabase API
+
   ```bash
   node tests/test-api-supabase.js
   ```
+
+---
+
 ## 📚 Documentazione
+
 * `config/supabase-config.js` → chiavi e setup Supabase client
 * `config/fauna-query-example.gql` → esempio query GraphQL per Fauna
 * `functions/media-proxy.js` → Worker proxy per riscrivere media Archive
 * `scripts/upload_to_archive.sh` → CLI Archive.org
+
+---
+
 ## 🛡️ Licenza
+
 MIT License — vedi [`LICENSE`](./LICENSE)
+
 ````
 # 📄 `.gitignore`
 ```gitignore
@@ -451,12 +557,15 @@ node_modules/
 dist/
 .cache/
 .vscode/
+
 # Python
 __pycache__/
 *.pyc
+
 # Archive.org artifacts
 *.zip
 upload.log
+
 # OS files
 .DS_Store
 Thumbs.db
@@ -466,8 +575,10 @@ Thumbs.db
 # Supabase
 SUPABASE_URL=https://xyzcompany.supabase.co
 SUPABASE_KEY=your-anon-public-key
+
 # FaunaDB
 FAUNA_SECRET=your-fauna-key
+
 # Internet Archive
 IA_ACCESS_KEY=your-archive-access
 IA_SECRET_KEY=your-archive-secret
@@ -484,10 +595,12 @@ IA_SECRET_KEY=your-archive-secret
 </head>
 <body>
   <h1>Benvenuto nel tuo sito 100% gratuito!</h1>
+
   <video controls width="600">
     <source src="https://archive.org/download/miosito-media/video.mp4" type="video/mp4">
     Il tuo browser non supporta il video HTML5.
   </video>
+
   <script type="module" src="../config/supabase-config.js"></script>
 </body>
 </html>
@@ -498,9 +611,11 @@ export async function onRequest(context) {
   const url = new URL(context.request.url)
   const mediaPath = url.pathname.replace('/media/', '/download/miosito-media/')
   const archiveUrl = `https://archive.org${mediaPath}`
+
   const response = await fetch(archiveUrl)
   const headers = new Headers(response.headers)
   headers.set('Access-Control-Allow-Origin', '*')
+
   return new Response(response.body, {
     status: response.status,
     headers
@@ -510,6 +625,7 @@ export async function onRequest(context) {
 # 📄 `config/supabase-config.js`
 ```js
 import { createClient } from '@supabase/supabase-js'
+
 const supabaseUrl = import.meta.env.SUPABASE_URL
 const supabaseKey = import.meta.env.SUPABASE_KEY
 export const supabase = createClient(supabaseUrl, supabaseKey)
@@ -528,9 +644,11 @@ query GetPosts {
 # 📄 `scripts/upload_to_archive.sh`
 ```bash
 #!/bin/bash
+
 FILE=$1
 ID="miosito-$(date +%F-%H%M%S)"
 echo "Uploading $FILE to Archive.org as $ID..."
+
 ia upload "$ID" "$FILE" \
   --metadata="title:Sito Demo Upload" \
   --metadata="description:File caricato automaticamente" \
@@ -540,6 +658,7 @@ ia upload "$ID" "$FILE" \
 # 📄 `tests/test-api-supabase.js`
 ```js
 import { supabase } from '../config/supabase-config.js'
+
 async function testConnection() {
   const { data, error } = await supabase.from('profiles').select('*')
   if (error) {
@@ -548,6 +667,7 @@ async function testConnection() {
     console.log('Dati ricevuti:', data)
   }
 }
+
 testConnection()
 ```
 # 📄 `examples/embed-media.html`
@@ -591,23 +711,33 @@ python-dotenv
 # 📄 `LICENSE`
 ```text
 MIT License
+
 Copyright (c) 2025 [TUO_NOME]
+
 Permission is hereby
 ```
 granted, free of charge, to any person obtaining a copy
 ...
 ```
+
 (Sostituisci `[TUO_NOME]` con il tuo nome o handle GitHub)
+
+---
+
 ✅ **PRONTO!**  
 Questo è un progetto **100% funzionante**, pronto per essere:
+
 1. Caricato su **GitHub**
 2. Collegato a **Cloudflare Pages**
 3. Integrato con **Supabase + Fauna + Archive**
+
 Se vuoi, posso aiutarti con:
+
 - Il `setup` su Cloudflare Pages  
 - Upload media automatico su Archive  
 - Form di contatto + login Supabase  
 - Query avanzate FaunaDB  
+
 Fammi sapere!
 ```
 ///
