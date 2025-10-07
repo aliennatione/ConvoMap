@@ -2,7 +2,7 @@ import { exec } from 'child_process';
 import { writeFile, mkdir, readdir, readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { promisify } from 'util';
-import { synthesizeContent } from './synthesize.js'; // Import the new intelligent synthesizer
+import { synthesizeContent } from './synthesize.js';
 
 const execAsync = promisify(exec);
 
@@ -10,15 +10,10 @@ const INPUT_DIR = 'data';
 const OUTPUT_DIR = 'public';
 const TEMP_DIR = 'tmp_build';
 
-/**
- * Generates an index.html file that lists all created mind maps.
- * @param {string[]} builtFiles - A list of the generated HTML file names.
- */
 async function createIndex(builtFiles) {
     const links = builtFiles
         .map(file => `<li><a href="./${file}">${file.replace(/\.html$/, '')}</a></li>`)
         .join('\n');
-
     const htmlContent = `
         <!DOCTYPE html>
         <html lang="en">
@@ -47,19 +42,13 @@ async function createIndex(builtFiles) {
         </body>
         </html>
     `;
-
     await writeFile(join(OUTPUT_DIR, 'index.html'), htmlContent);
     console.log('✅ Index file created.');
 }
 
-/**
- * Main build process.
- */
 async function main() {
     try {
-        console.log('🚀 Starting intelligent build process...');
-
-        // Get Gemini API Key from environment
+        console.log('🚀 Starting sequential build process...');
         const geminiApiKey = process.env.GEMINI_API_KEY;
         if (!geminiApiKey) {
             throw new Error('GEMINI_API_KEY environment variable is not set.');
@@ -77,13 +66,12 @@ async function main() {
             return;
         }
 
-        console.log(`🧠 Synthesizing content for ${markdownFiles.length} file(s) using Gemini...`);
+        console.log(`🧠 Synthesizing content for ${markdownFiles.length} file(s) sequentially...`);
 
-        const conversionPromises = markdownFiles.map(async (fileName) => {
-            console.log(`Processing file: ${fileName}`);
+        for (const fileName of markdownFiles) {
+            console.log(`--- Processing file: ${fileName} ---`);
             const rawContent = await readFile(join(INPUT_DIR, fileName), 'utf-8');
             
-            // Synthesize content with Gemini
             const synthesizedMarkdown = await synthesizeContent(rawContent, geminiApiKey);
             
             const baseName = fileName.replace(/\.md$/, '');
@@ -96,9 +84,7 @@ async function main() {
             await execAsync(command);
             
             console.log(`🗺️  Mind map created: ${outputPath}`);
-        });
-
-        await Promise.all(conversionPromises);
+        }
 
         const builtFiles = (await readdir(OUTPUT_DIR)).filter(file => file.endsWith('.html') && file !== 'index.html');
         await createIndex(builtFiles);
