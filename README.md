@@ -6,80 +6,68 @@ Questo progetto fornisce una catena di strumenti (toolchain) per convertire i lo
 
 L'obiettivo principale è trasformare lunghe e spesso complesse cronologie di chat in mappe mentali chiare e navigabili. Questo approccio facilita l'analisi, la documentazione e la revisione dei punti chiave, delle decisioni prese e degli snippet di codice discussi durante una conversazione, specialmente quelle avute con assistenti AI.
 
-**Casi d'uso:**
-*   **Revisione Tecnica:** Analizzare rapidamente le soluzioni tecniche e le alternative discusse.
-*   **Documentazione Automatica:** Creare una documentazione visuale da una sessione di brainstorming o di sviluppo.
-*   **Apprendimento:** Estrarre e organizzare i concetti chiave da una conversazione didattica.
-
 ## Come Funziona
 
 Il processo è automatizzato tramite script e si articola in due fasi principali, orchestrate dal comando `npm run build`:
 
 1.  **Preprocessing Avanzato (`preprocess.mjs`):**
-    *   **Lettura:** Legge i file Markdown "grezzi" presenti nella directory `data/`.
-    *   **Pulizia Intelligente:** Rimuove il "rumore" conversazionale. Utilizza una serie di espressioni regolari per eliminare saluti, convenevoli, istruzioni rivolte all'AI e altre frasi che non appartengono al contenuto principale.
-    *   **Correzione Strutturale:** Applica correzioni specifiche per rendere il contenuto compatibile con Markmap. Ad esempio, nel file `scc.md`, sostituisce i caratteri speciali usati per disegnare alberi di testo (`├`, `─`, `│`) con una sintassi a lista Markdown standard.
-    *   **Salvataggio Intermedio:** Salva i file Markdown ripuliti e ristrutturati nella directory `processed_data/`, pronti per la fase successiva.
+    *   Lettura dei file Markdown "grezzi" dalla directory `data/`.
+    *   Pulizia intelligente per rimuovere il "rumore" conversazionale.
+    *   Correzione strutturale per garantire la compatibilità con Markmap.
+    *   Salvataggio dei file puliti nella directory `processed_data/`.
 
 2.  **Build delle Mappe (`build.mjs`):**
-    *   **Esecuzione Preprocessing:** Come prima cosa, avvia lo script `preprocess.mjs` per assicurarsi che i dati siano pronti.
-    *   **Conversione:** Utilizza la libreria `markmap-cli` per convertire ogni file Markdown pulito (da `processed_data/`) in una mappa mentale HTML autonoma e interattiva.
-    *   **Finalizzazione:** Salva i file HTML finali nella directory `public/`.
-    *   **Creazione Indice:** Genera un file `index.html` principale che funge da portale, con un elenco di link a tutte le mappe mentali generate, facilitando la navigazione.
-
-## Struttura del Progetto
-
-```
-.
-├── .idx/
-│   └── dev.nix        # File di configurazione dell'ambiente per IDX.
-│                      # Definisce i pacchetti (Node.js, Caddy) e le impostazioni.
-├── data/              # INPUT: Directory dove inserire i file Markdown grezzi.
-├── processed_data/    # INTERMEDIO: Contiene i file Markdown dopo la pulizia. (Gitignored)
-├── public/            # OUTPUT: Contiene le mappe mentali HTML finali e l'indice.
-├── node_modules/      # Dipendenze del progetto. (Gitignored)
-├── build.mjs          # Script principale che orchestra il processo di build.
-├── preprocess.mjs     # Script per la pulizia e la strutturazione dei dati.
-├── package.json       # Definisce gli script (npm run build) e le dipendenze.
-└── README.md          # Questa documentazione.
-```
+    *   Esecuzione del preprocessing.
+    *   Conversione di ogni file Markdown pulito in una mappa mentale HTML.
+    *   Salvataggio dei file HTML nella directory `public/`.
+    *   Creazione di un file `index.html` per la navigazione.
 
 ## Istruzioni per l'Ambiente IDX
 
-### Configurazione dell'Ambiente
+Questo progetto è pre-configurato per l'ambiente di sviluppo IDX. Il file `.idx/dev.nix` installa automaticamente Node.js e Caddy per l'anteprima locale.
 
-Questo progetto è pre-configurato per funzionare al meglio all'interno dell'ambiente di sviluppo IDX di Google. Il file `.idx/dev.nix` si occupa di configurare automaticamente tutto il necessario:
+### Guida Rapida (IDX)
 
-*   **`pkgs.nodejs_20`**: Installa l'ambiente di runtime JavaScript (Node.js) necessario per eseguire gli script.
-*   **`pkgs.caddy`**: Installa Caddy, un web server moderno e leggero, utilizzato per servire i file HTML generati e fornire un'anteprima live.
-*   **`idx.previews`**: Configura l'anteprima web nell'editor di IDX, avviando automaticamente il server Caddy e puntandolo alla directory `public/`.
+1.  **Installazione Dipendenze:** `npm install`
+2.  **Avvio Build:** `npm run build`
+3.  **Visualizzazione:** Apri l'anteprima di IDX per vedere il sito servito da Caddy.
 
-### Guida Rapida
+## Pubblicazione con GitHub Pages
 
-1.  **Installazione delle Dipendenze:**
-    Questo comando legge il file `package.json` e scarica le librerie necessarie, come `markmap-cli`.
-    ```bash
-    npm install
-    ```
+Questo repository include un workflow di **GitHub Actions** che automatizza completamente la pubblicazione del sito su GitHub Pages.
 
-2.  **Avvio del Processo di Build:**
-    Questo è il comando principale. Esegue l'intera pipeline: preprocessing e successiva generazione delle mappe.
-    ```bash
-    npm run build
-    ```
+### Come Funziona l'Automazione
 
-3.  **Visualizzazione delle Mappe Mentali:**
-    *   Una volta terminato il build, il pannello di anteprima (Preview) di IDX si aggiornerà.
-    *   Il server Caddy mostrerà il contenuto della directory `public/`.
-    *   Puoi aprire il file `index.html` per visualizzare l'elenco di tutte le mappe generate e cliccare sui link per esplorarle.
+1.  Ogni volta che effettui un `push` sul branch `main`, l'azione si attiva automaticamente.
+2.  Esegue il build del progetto (`npm run build`) su un server virtuale.
+3.  Prende il contenuto della cartella `public/` e lo pubblica su un branch dedicato chiamato `gh-pages`.
+
+### Istruzioni per la Configurazione
+
+La prima volta, devi dire a GitHub di usare il risultato di questa automazione per il tuo sito. È un'operazione da fare una sola volta:
+
+1.  Vai sul tuo repository GitHub: `https://github.com/aliennatione/ConvoMap`.
+2.  Clicca su **Settings** (Impostazioni).
+3.  Nel menu a sinistra, clicca su **Pages**.
+4.  Sotto **Build and deployment**, alla voce **Source**, seleziona **GitHub Actions**.
+
+### Accesso al Sito
+
+Dopo il primo push, attendi un paio di minuti che l'azione completi il suo primo ciclo. Il tuo sito sarà quindi visibile all'indirizzo:
+
+**https://aliennatione.github.io/ConvoMap/**
+
+Ad ogni push successivo sul branch `main`, il sito si aggiornerà automaticamente.
 
 ## Personalizzazione
 
 Per utilizzare questo strumento con le tue conversazioni:
 
-1.  **Esporta la Chat:** Salva la cronologia della tua chat in un file con estensione `.md`.
-2.  **Aggiungi il File:** Inserisci il file appena creato nella directory `data/`.
-3.  **Esegui il Build:** Lancia il comando `npm run build` dal terminale.
-4.  **Visualizza:** La tua nuova mappa mentale sarà disponibile nel pannello di anteprima e nella directory `public/`.
-
-**Suggerimento:** Se le tue chat contengono pattern conversazionali diversi da quelli gestiti, puoi personalizzare lo script `preprocess.mjs` aggiungendo nuove regole di filtraggio all'array `conversationalPatterns`.
+1.  **Aggiungi i File:** Inserisci i tuoi file `.md` nella directory `data/`.
+2.  **Esegui il Commit e il Push:** Salva le modifiche e inviale a GitHub.
+    ```bash
+    git add data/tuo-nuovo-file.md
+    git commit -m "Aggiunto nuovo file di conversazione"
+    git push origin main
+    ```
+3.  **Attendi e Visualizza:** Dopo qualche minuto, l'azione si completerà e la nuova mappa mentale apparirà sul tuo sito GitHub Pages.
