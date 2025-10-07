@@ -1,14 +1,14 @@
 import { exec } from 'child_process';
-import { writeFile, mkdir, readdir, rm } from 'fs/promises';
+import { writeFile, mkdir, readdir, readFile, rm } from 'fs/promises';
 import { join } from 'path';
 import { promisify } from 'util';
-import { preprocess } from './preprocess.mjs';
+import { synthesizeContent } from './synthesize.mjs'; // Import the new intelligent synthesizer
 
 const execAsync = promisify(exec);
 
 const INPUT_DIR = 'data';
 const OUTPUT_DIR = 'public';
-const TEMP_DIR = 'tmp_build'; // Directory for temporary preprocessed files
+const TEMP_DIR = 'tmp_build';
 
 /**
  * Generates an index.html file that lists all created mind maps.
@@ -57,33 +57,40 @@ async function createIndex(builtFiles) {
  */
 async function main() {
     try {
-        console.log('🚀 Starting build process...');
+        console.log('🚀 Starting intelligent build process...');
 
-        // Ensure output and temporary directories exist
+        // Get Gemini API Key from environment
+        const geminiApiKey = process.env.GEMINI_API_KEY;
+        if (!geminiApiKey) {
+            throw new Error('GEMINI_API_KEY environment variable is not set.');
+        }
+
         await mkdir(OUTPUT_DIR, { recursive: true });
         await mkdir(TEMP_DIR, { recursive: true });
 
-        // 1. Preprocess all files
-        console.log('🔍 Preprocessing files...');
-        const processedData = await preprocess(INPUT_DIR);
-        
-        if (processedData.length === 0) {
+        const files = await readdir(INPUT_DIR);
+        const markdownFiles = files.filter(file => file.endsWith('.md'));
+
+        if (markdownFiles.length === 0) {
             console.warn('⚠️ No markdown files found. Build finished early.');
             await createIndex([]);
             return;
         }
 
-        // 2. Generate mind maps using temporary files
-        console.log('🧠 Generating mind maps...');
-        const conversionPromises = processedData.map(async ({ fileName, content }) => {
+        console.log(`🧠 Synthesizing content for ${markdownFiles.length} file(s) using Gemini...`);
+
+        const conversionPromises = markdownFiles.map(async (fileName) => {
+            const rawContent = await readFile(join(INPUT_DIR, fileName), 'utf-8');
+            
+            // Synthesize content with Gemini
+            const synthesizedMarkdown = await synthesizeContent(rawContent, geminiApiKey);
+            
             const baseName = fileName.replace(/\.md$/, '');
-            const tempInputPath = join(TEMP_DIR, fileName);
+            const tempInputPath = join(TEMP_DIR, `${baseName}.md`);
             const outputPath = join(OUTPUT_DIR, `${baseName}.html`);
 
-            // Write preprocessed content to a temporary file
-            await writeFile(tempInputPath, content);
+            await writeFile(tempInputPath, synthesizedMarkdown);
 
-            // Execute markmap-cli on the temporary file
             const command = `npx markmap-cli "${tempInputPath}" --no-open --output "${outputPath}"`;
             await execAsync(command);
             
@@ -92,7 +99,6 @@ async function main() {
 
         await Promise.all(conversionPromises);
 
-        // 3. Create the main index file
         const builtFiles = (await readdir(OUTPUT_DIR)).filter(file => file.endsWith('.html') && file !== 'index.html');
         await createIndex(builtFiles);
 
@@ -102,9 +108,8 @@ async function main() {
         console.error('❌ Build process failed:', error);
         process.exit(1);
     } finally {
-        // 4. Clean up the temporary directory
-        console.log('🧹 Cleaning up temporary files...');
         await rm(TEMP_DIR, { recursive: true, force: true });
+        console.log('🧹 Cleaned up temporary files.');
     }
 }
 
