@@ -77,8 +77,8 @@ async function main() {
             const baseName = fileName.replace(/\.md$/, '');
             const outputPath = join(OUTPUT_DIR, `${baseName}.html`);
             
-            // Use stdin/stdout for passing content to avoid issues with shell special characters
-            const command = `npx markmap-cli --no-open --output "${outputPath}"`;
+            // Pass '-' to markmap-cli to indicate reading from stdin.
+            const command = `npx markmap-cli - --no-open --output "${outputPath}"`;
             const child = execAsync(command);
             
             if (child.child.stdin) {

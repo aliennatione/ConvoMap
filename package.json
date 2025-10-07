@@ -19,6 +19,6 @@
   "author": "",
   "license": "ISC",
   "dependencies": {
-    "markmap-cli": "^0.17.0"
+    "markmap-cli": "^0.18.12"
   }
 }
