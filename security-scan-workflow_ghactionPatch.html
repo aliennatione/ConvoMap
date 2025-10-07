@@ -1,36 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
 <title>Markmap</title>
 <style>
 * {
   margin: 0;
   padding: 0;
 }
-html {
-  font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-}
 #mindmap {
   display: block;
   width: 100vw;
   height: 100vh;
 }
-.markmap-dark {
-  background: #27272a;
-  color: white;
-}
 </style>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.18.12/dist/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.11.1/styles/default.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.17.2/dist/style.css">
 </head>
 <body>
 <svg id="mindmap"></svg>
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.12/dist/browser/index.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.18.12/dist/index.js"></script><script>((r) => {
-          setTimeout(r);
-        })(() => {
+<script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-view@0.17.2/dist/browser/index.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.17.2/dist/index.js"></script><script>((r) => {
+            setTimeout(r);
+          })(() => {
   const { markmap, mm } = window;
   const toolbar = new markmap.Toolbar();
   toolbar.attach(mm);
@@ -44,9 +36,6 @@ html {
                 (getOptions || markmap.deriveOptions)(jsonOptions),
                 root2
               );
-              if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-                document.documentElement.classList.add("markmap-dark");
-              }
-            })(() => window.markmap,null,{"content":"","children":[{"content":"Analysis Error","children":[{"content":"Could not process content with Gemini.","children":[],"payload":{"tag":"li","lines":"2,3"}},{"content":"Raw content:<br>\n```<br>\nEcco un progetto completo, coeso e pronto per essere usato come base GitHub repository per aggiungere un workflow GitHub Actions di security scan (con CodeQL, Semgrep, npm audit, ripgrep, e uno script Node.js personalizzato) pi&#xf9; la cartella <code>tools/</code> con script e regole.","children":[],"payload":{"tag":"li","lines":"3,7"}}],"payload":{"tag":"h1","lines":"0,1"}},{"content":"&#x1f4c1; Struttura del progetto (riassunto)","children":[{"content":"<pre data-lines=\"11,22\"><code data-lines=\"11,22\">security-scan-workflow<span class=\"hljs-symbol\">/</span>\n&#x251c;&#x2500;&#x2500; .github<span class=\"hljs-symbol\">/</span>\n&#x2502;   &#x2514;&#x2500;&#x2500; workflows<span class=\"hljs-symbol\">/</span>\n&#x2502;       &#x2514;&#x2500;&#x2500; security-scan.yml\n&#x251c;&#x2500;&#x2500; tools<span class=\"hljs-symbol\">/</span>\n&#x2502;   &#x251c;&#x2500;&#x2500; quick-scan.js\n&#x2502;   &#x2514;&#x2500;&#x2500; semgrep-rules.yml\n&#x251c;&#x2500;&#x2500; .gitignore\n&#x251c;&#x2500;&#x2500;...\n\\`\\`\\`</code></pre>","children":[],"payload":{"tag":"pre","lines":"11,22"}}],"payload":{"tag":"h1","lines":"9,10"}}]},null)</script>
+            })(() => window.markmap,null,{"content":"","children":[{"content":"Analysis Error","children":[{"content":"Could not process content with Gemini.","children":[],"payload":{"lines":"2,3"}},{"content":"Raw content:<br>\n```<br>\nEcco un progetto completo, coeso e pronto per essere usato come base GitHub repository per aggiungere un workflow GitHub Actions di security scan (con CodeQL, Semgrep, npm audit, ripgrep, e uno script Node.js personalizzato) più la cartella <code>tools/</code> con script e regole.","children":[],"payload":{"lines":"3,7"}}],"payload":{"lines":"0,1"}},{"content":"📁 Struttura del progetto (riassunto)","children":[{"content":"<pre><code data-lines=\"11,22\">security-scan-workflow<span class=\"hljs-symbol\">/</span>\n├── .github<span class=\"hljs-symbol\">/</span>\n│   └── workflows<span class=\"hljs-symbol\">/</span>\n│       └── security-scan.yml\n├── tools<span class=\"hljs-symbol\">/</span>\n│   ├── quick-scan.js\n│   └── semgrep-rules.yml\n├── .gitignore\n├──...\n\\`\\`\\`</code></pre>","children":[],"payload":{"lines":"11,22"}}],"payload":{"lines":"9,10"}}]},null)</script>
 </body>
 </html>

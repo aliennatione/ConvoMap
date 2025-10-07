@@ -1,36 +1,28 @@
-<!doctype html>
+<!DOCTYPE html>
 <html>
 <head>
-<meta charset="UTF-8" />
-<meta name="viewport" content="width=device-width, initial-scale=1.0" />
-<meta http-equiv="X-UA-Compatible" content="ie=edge" />
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<meta http-equiv="X-UA-Compatible" content="ie=edge">
 <title>Markmap</title>
 <style>
 * {
   margin: 0;
   padding: 0;
 }
-html {
-  font-family: ui-sans-serif, system-ui, sans-serif, 'Apple Color Emoji',
-    'Segoe UI Emoji', 'Segoe UI Symbol', 'Noto Color Emoji';
-}
 #mindmap {
   display: block;
   width: 100vw;
   height: 100vh;
 }
-.markmap-dark {
-  background: #27272a;
-  color: white;
-}
 </style>
-<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.18.12/dist/style.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.11.1/styles/default.min.css">
+<link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/@highlightjs/cdn-assets@11.8.0/styles/default.min.css"><link rel="stylesheet" href="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.17.2/dist/style.css">
 </head>
 <body>
 <svg id="mindmap"></svg>
-<script src="https://cdn.jsdelivr.net/npm/d3@7.9.0/dist/d3.min.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-view@0.18.12/dist/browser/index.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.18.12/dist/index.js"></script><script>((r) => {
-          setTimeout(r);
-        })(() => {
+<script src="https://cdn.jsdelivr.net/npm/d3@7.8.5/dist/d3.min.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-view@0.17.2/dist/browser/index.js"></script><script src="https://cdn.jsdelivr.net/npm/markmap-toolbar@0.17.2/dist/index.js"></script><script>((r) => {
+            setTimeout(r);
+          })(() => {
   const { markmap, mm } = window;
   const toolbar = new markmap.Toolbar();
   toolbar.attach(mm);
@@ -44,9 +36,6 @@ html {
                 (getOptions || markmap.deriveOptions)(jsonOptions),
                 root2
               );
-              if (window.matchMedia("(prefers-color-scheme: dark)").matches) {
-                document.documentElement.classList.add("markmap-dark");
-              }
-            })(() => window.markmap,null,{"content":"Analysis Error","children":[{"content":"<pre data-lines=\"5,32\"><code class=\"language-plaintext\">project-root/\n&#x251c;&#x2500;&#x2500; README.md\n&#x251c;&#x2500;&#x2500; LICENSE\n&#x251c;&#x2500;&#x2500; .gitignore\n&#x251c;&#x2500;&#x2500; .env.example\n&#x251c;&#x2500;&#x2500; package.json\n&#x251c;&#x2500;&#x2500; public/\n&#x2502;   &#x251c;&#x2500;&#x2500; index.html\n&#x2502;   &#x2514;&#x2500;&#x2500; favicon.ico\n&#x251c;&#x2500;&#x2500; src/\n&#x2502;   &#x251c;&#x2500;&#x2500; api/\n&#x2502;   &#x2502;   &#x251c;&#x2500;&#x2500; faunaClient.js\n&#x2502;   &#x2502;   &#x2514;&#x2500;&#x2500; supabaseClient.js\n&#x2502;   &#x251c;&#x2500;&#x2500; components/\n&#x2502;   &#x2502;   &#x251c;&#x2500;&#x2500; MediaPlayer.jsx\n&#x2502;   &#x2502;   &#x251c;&#x2500;&#x2500; Login.jsx\n&#x2502;   &#x2502;   &#x2514;&#x2500;&#x2500; UserProfile.jsx\n&#x2502;   &#x251c;&#x2500;&#x2500; workers/\n&#x2502;   &#x2502;   &#x2514;&#x2500;&#x2500; media-proxy-worker.js\n&#x2502;   &#x251c;&#x2500;&#x2500; App.jsx\n&#x2502;   &#x251c;&#x2500;&#x2500; main.jsx\n&#x2502;   &#x2514;&#x2500;&#x2500; styles.css\n&#x251c;&#x2500;&#x2500; scripts/\n&#x2502;   &#x2514;&#x2500;&#x2500; uploadToArchive.js\n&#x251c;&#x2500;...\n\\`\\`\\`</code></pre>","children":[],"payload":{"tag":"pre","lines":"5,32"}}],"payload":{"tag":"h1","lines":"0,1"}},null)</script>
+            })(() => window.markmap,null,{"content":"Analysis Error","children":[{"content":"<pre><code class=\"language-plaintext\">project-root/\n├── README.md\n├── LICENSE\n├── .gitignore\n├── .env.example\n├── package.json\n├── public/\n│   ├── index.html\n│   └── favicon.ico\n├── src/\n│   ├── api/\n│   │   ├── faunaClient.js\n│   │   └── supabaseClient.js\n│   ├── components/\n│   │   ├── MediaPlayer.jsx\n│   │   ├── Login.jsx\n│   │   └── UserProfile.jsx\n│   ├── workers/\n│   │   └── media-proxy-worker.js\n│   ├── App.jsx\n│   ├── main.jsx\n│   └── styles.css\n├── scripts/\n│   └── uploadToArchive.js\n├─...\n\\`\\`\\`</code></pre>","children":[]}],"payload":{"lines":"0,1"}},null)</script>
 </body>
 </html>
