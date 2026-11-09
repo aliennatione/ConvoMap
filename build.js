@@ -81,6 +81,31 @@ async function main() {
             await execAsync(command);
             
             console.log(`🗺️  Mind map created: ${outputPath}`);
+            // Inject keyboard shortcuts + collapsible legend
+            let html = await readFile(outputPath, 'utf-8');
+            const script = '<script>\n' +
+'(function(){\n' +
+'  function init(){\n' +
+'    if(!window.mm) return setTimeout(init,100);\n' +
+'    const mm=window.mm;\n' +
+'    const legend=document.createElement("div");\n' +
+'    legend.id="km-legend";\n' +
+'    legend.style.cssText="position:fixed;top:12px;left:12px;background:rgba(255,255,255,.95);padding:10px 12px;border-radius:8px;box-shadow:0 2px 8px rgba(0,0,0,.15);font:13px sans-serif;z-index:9999;display:none";\n' +
+'    legend.innerHTML="<b>Comandi</b><br>+ zoom in<br>- zoom out<br>0 adatta<br>? legenda";\n' +
+'    document.body.appendChild(legend);\n' +
+'    document.addEventListener("keydown",function(e){\n' +
+'      if(e.key==="+ "||e.key==="+"){mm.rescale(1.25);}\n' +
+'      else if(e.key==="-"){mm.rescale(1/1.25);}\n' +
+'      else if(e.key==="0"){mm.fit();}\n' +
+'      else if(e.key==="?"){legend.style.display=legend.style.display==="none"?"block":"none";}\n' +
+'    });\n' +
+'  }\n' +
+'  init();\n' +
+'})();\n' +
+'</script>';
+            html = html.replace("</body>", script + "</body>");
+            await writeFile(outputPath, html);
+
         }
 
         const builtFiles = (await readdir(OUTPUT_DIR)).filter(file => file.endsWith('.html') && file !== 'index.html');

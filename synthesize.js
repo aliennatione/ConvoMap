@@ -9,11 +9,37 @@ function classifyContent(content) {
 }
 
 function getTechnicalPrompt(content) {
-    return `As an expert software project analyst, convert a technical conversation log into a structured, hierarchical markdown mind map for Markmap.\n\nInstructions:\n1. Title: Create a root title for the project or the main goal discussed.\n2. Key Topics: Identify major themes like "Project Setup", "Bug Fixes", "New Features", "Deployment", "Errors". These are your main branches.\n3. Hierarchy: Structure events, commands, and decisions chronologically or logically under the appropriate topic. Use indentation for sub-tasks or details.\n4. Code & Commands: Represent important terminal commands or code snippets as distinct nodes.\n5. Decisions & Outcomes: Clearly mark key decisions and their results.\n\nAnalyze the following technical log:\n---\n${content}\n---`;
+    return `Sei un analista esperto. Converti il log di conversazione tecnica in una mappa mentale Markdown per Markmap, IN ITALIANO.
+
+Istruzioni:
+1. Non omettere alcun contenuto rilevante dell'originale: riporta decisioni, comandi, errori, risultati. Se ci sono citazioni testuali, riportale come citazioni Markdown (> ...) o come testo integrale.
+2. Titolo radice chiaro.
+3. Rami principali per temi (Setup, Bug, Feature, Deploy, Errori).
+4. Gerarchia con indentazione.
+5. Comandi/codice come nodi distinti (code inline o blocchi).
+6. Decisioni ed esiti evidenziati.
+
+Log da analizzare:
+---
+${content}
+---
+`;
 }
 
 function getLiteraryPrompt(content) {
-    return `As an expert literary analyst, convert a chapter of a story into a structured, hierarchical markdown mind map for Markmap.\n\nInstructions:\n1. Identify Core Subject: Use the story's central theme or main character as the root node.\n2. Extract Plot Points: Pull out main events, character interactions, and turning points as primary branches.\n3. Analyze Characters: Create branches for main characters, describing their key actions, motivations, or dialogue.\n4. Note Settings: Create nodes for the different locations where the story takes place.\n5. Format for Markmap: Use standard markdown with # for the title and - for indented bullets.\n\nAnalyze the following story excerpt:\n---\n${content}\n---`;
+    return `Sei un analista letterario. Converti il testo in una mappa mentale Markdown per Markmap, IN ITALIANO.
+
+Istruzioni:
+1. Non omettere alcun contenuto rilevante: riporta eventi, personaggi, dialoghi importanti, citazioni come citazioni Markdown (> ...) o testo integrale.
+2. Nodo radice: tema centrale o protagonista.
+3. Rami per eventi, personaggi, ambientazioni.
+4. Formato Markmap con # titolo e - bullet indentati.
+
+Testo da analizzare:
+---
+${content}
+---
+`;
 }
 
 export async function synthesizeContent(content, apiKey) {
