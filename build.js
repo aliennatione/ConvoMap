@@ -49,10 +49,7 @@ async function createIndex(builtFiles) {
 async function main() {
     try {
         console.log('🚀 Starting sequential build process...');
-        const geminiApiKey = process.env.GEMINI_API_KEY;
-        if (!geminiApiKey) {
-            throw new Error('GEMINI_API_KEY environment variable is not set.');
-        }
+        const apiKey = process.env.OPENCODE_API_KEY || process.env.GEMINI_API_KEY || '';
 
         await mkdir(OUTPUT_DIR, { recursive: true });
         await mkdir(TEMP_DIR, { recursive: true });
@@ -72,7 +69,7 @@ async function main() {
             console.log(`--- Processing file: ${fileName} ---`);
             const rawContent = await readFile(join(INPUT_DIR, fileName), 'utf-8');
             
-            const synthesizedMarkdown = await synthesizeContent(rawContent, geminiApiKey);
+            const synthesizedMarkdown = await synthesizeContent(rawContent, apiKey);
             
             const baseName = fileName.replace(/\.md$/, '');
             const tempInputPath = join(TEMP_DIR, `${baseName}.md`);
